@@ -1,0 +1,528 @@
+/* ChatWidget.css */
+@import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600&display=swap');
+
+:root {
+  --font-stack: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --primary-red: #C1132E;
+  --bg-gradient: linear-gradient(165deg, #360f13 0%, #1a1a1a 30%, #0f0f0f 100%);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.08);
+}
+
+body {
+  background-image: url("https://gnexteriors.com/wp-content/uploads/2025/05/about.webp");
+  background-repeat: no-repeat;
+  background-size: 100%;
+  opacity: 2;
+
+}
+
+
+
+
+/* --- Floating Trigger Button & Wrapper (Same as before) --- */
+.cw-trigger-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 1px solid rgb(137, 115, 111);
+  background: linear-gradient(135deg, #741b1b, #4a0d0d);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  transition: transform 0.3s, background 0.3s;
+}
+
+.cw-trigger-btn:hover {
+  transform: scale(1.1);
+  box-shadow:
+    0 0 10px rgba(193, 19, 46, 0.6),
+    0 0 20px rgba(193, 19, 46, 0.4),
+    0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
+.cw-trigger-btn.open {
+  background: #5c1518;
+  transform: rotate(90deg);
+}
+
+.cw-greeting-bubble {
+  position: fixed;
+  bottom: 30px;
+  right: 95px;
+  background: #2b1011;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 50px;
+  font-family: var(--font-stack);
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(10px);
+}
+
+/* WRAPPER POSITION */
+.cw-wrapper {
+  position: fixed;
+  bottom: 100px;
+  right: 24px;
+  z-index: 9999;
+  font-family: var(--font-stack);
+}
+
+/* MAIN GLASS CARD */
+.cw-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 460px;
+  height: 670px;
+  padding: 24px;
+  border-radius: 32px;
+
+  /* 🔥 TRANSPARENT GRADIENT BACKGROUND */
+  background:
+    linear-gradient(rgb(55, 22, 25) 0%,
+      rgb(46, 16, 20) 8%,
+      rgb(3, 3, 3) 30%,
+      rgba(10, 10, 10, 0.719) 50%,
+      rgba(10, 10, 10, 0.678) 66%,
+      rgba(10, 10, 10, 0.678) 20%,
+      rgba(43, 17, 17, 0.63)100%),
+      rgba(0, 0, 0, 0.15);
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  box-shadow:
+    rgba(0, 0, 0, 0.45) 0px 18px 44px,
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+
+  overflow: hidden;
+  opacity: 1;
+  animation: cwFadeUp 0.3s ease-out;
+}
+
+/* ENTRANCE ANIMATION */
+@keyframes cwFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 🔥 LEFT RED GLOW LINE */
+.cw-left-line {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+
+  width: 2px;
+  border-radius: 32px;
+
+  background: linear-gradient(transparent 0%,
+      rgb(193, 19, 46) 30%,
+      rgb(193, 19, 46) 70%,
+      transparent 100%);
+
+  opacity: 0.5;
+
+  box-shadow:
+    rgba(193, 19, 46, 0.6) 0px 0px 12px,
+    rgba(193, 19, 46, 0.4) 0px 0px 8px inset;
+
+  z-index: 2;
+}
+
+/* 🔥 LIGHT OVERLAY SHINE */
+.cw-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  border-radius: 32px;
+
+  /* background: linear-gradient(
+    135deg,
+    rgb(44, 2, 8) 0%,
+    transparent 25%,
+    transparent 75%,
+    rgba(193, 19, 46, 0.05) 100%
+  ); */
+
+  mix-blend-mode: overlay;
+  z-index: 1;
+}
+
+
+/* --- Header --- */
+.cw-header-wrapper {
+  position: relative;
+  z-index: 2;
+  margin-bottom: 20px;
+}
+
+.cw-header-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.cw-logo-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.cw-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 2;
+}
+
+
+.cw-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Text aur Dot ke beech ka gap */
+}
+.cw-title {
+  font-family: "SF Pro Display", -apple-system, system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 19px;
+  color: white;
+  line-height: 1.3;
+}
+.cw-status-dot {
+  width: 8px;
+  height: 8px;
+  background-color: rgb(193, 19, 46); /* Theme Red Color */
+  border-radius: 50%; /* Circle shape */
+  box-shadow: 0 0 8px rgba(193, 19, 46, 0.8); /* Glow effect */
+  flex-shrink: 0;
+}
+
+
+.cw-subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  /* margin: 4px 0 0 0; */
+}
+
+/* --- Body / Chat Area --- */
+.cw-body {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+  z-index: 2;
+  padding-right: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  /* Spacing between messages */
+}
+
+/* BOT MESSAGE (Left side) */
+.cw-bot-bubble {
+  background: var(--glass-bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 16px;
+  border-radius: 16px;
+  border-top-left-radius: 4px;
+  color: #eee;
+  font-size: 15px;
+  line-height: 1.5;
+  backdrop-filter: blur(5px);
+  align-self: flex-start;
+  max-width: 85%;
+}
+
+/* USER MESSAGE (Right side with Avatar) */
+.cw-user-message-row {
+  display: flex;
+  align-items: flex-end;
+  /* Align avatar to bottom of bubble */
+  justify-content: flex-end;
+  gap: 10px;
+  align-self: flex-end;
+  max-width: 90%;
+}
+
+.cw-user-bubble {
+  background: rgba(80, 80, 80, 0.4);
+  /* Darker Glassy */
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: white;
+  padding: 14px 20px;
+  border-radius: 24px;
+  border-bottom-right-radius: 4px;
+  font-size: 15px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(4px);
+}
+
+.cw-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* --- Animation Keyframes --- */
+@keyframes cwChipEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* CHIP CONTAINER */
+.cw-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* CHIP BUTTON */
+.cw-chip-btn {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(16px);
+
+  font-family: "SF Pro Display", -apple-system, system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  color: white;
+
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  transition: all 0.25s ease;
+
+  /* --- Animation Added Here --- */
+  /* 'both' ensure karta hai ki animation start hone se pehle button invisible rahe */
+  animation: cwChipEnter 0.6s cubic-bezier(0.21, 1.02, 0.73, 1) both;
+}
+
+/* HOVER GRADIENT OVERLAY */
+.cw-chip-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  border-radius: 20px;
+  background: linear-gradient(135deg,
+      rgba(193, 19, 46, 0.25) 0%,
+      rgba(94, 15, 24, 0.15) 100%);
+  transition: opacity 0.3s;
+}
+
+/* UNDERLINE ON HOVER */
+.cw-chip-btn::after {
+  content: "";
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 1px;
+  width: 0;
+  background: rgb(193, 19, 46);
+  transition: width 0.3s;
+}
+
+/* HOVER EFFECTS */
+.cw-chip-btn:hover {
+  transform: scale(1.02);
+}
+
+.cw-chip-btn:active {
+  transform: scale(0.98);
+}
+
+.cw-chip-btn:hover::before {
+  opacity: 1;
+}
+
+.cw-chip-btn:hover::after {
+  width: calc(100% - 28px);
+}
+
+/* LOADING DOTS (3 Dots Animation) */
+.cw-typing-container {
+  background: var(--glass-bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 12px 16px;
+  border-radius: 16px;
+  border-top-left-radius: 4px;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+}
+
+.cw-dot {
+  width: 6px;
+  height: 6px;
+  background: #aaa;
+  border-radius: 50%;
+  animation: cwBounce 1.4s infinite ease-in-out both;
+}
+
+.cw-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.cw-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes cwBounce {
+
+  0%,
+  80%,
+  100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* --- Footer --- */
+.cw-footer {
+  margin-top: auto;
+  position: relative;
+  z-index: 2;
+  padding-top: 15px;
+}
+
+.cw-input-container {
+  background: rgb(85, 84, 84);
+  border: 1px solid rgba(189, 189, 189, 0.384);
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  padding: 8px 8px 8px 20px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.cw-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  font-size: 15px;
+  font-family: var(--font-stack);
+}
+
+.cw-input::placeholder {
+  color: #888;
+}
+
+.cw-send-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.cw-send-btn svg {
+  transition: stroke 0.2s;
+  stroke: #C1132E;
+  /* default stroke color */
+}
+
+.cw-send-btn:hover {
+  transform: scale(1.05);
+  background: transparent;
+}
+
+.cw-send-btn:hover svg {
+  stroke: white;
+  /* change SVG stroke color on hover */
+}
+
+.cw-powered {
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 10px;
+  font-weight: 500;
+}
+
+/* Scrollbar */
+.cw-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.cw-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cw-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .cw-container {
+    width: 100%;
+    height: 100vh;
+    bottom: 0;
+    right: 0;
+    border-radius: 0;
+  }
+}

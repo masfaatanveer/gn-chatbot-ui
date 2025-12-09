@@ -1,10 +1,11 @@
-import Chatbot from "./Chatbot"
+import ChatWidget from "./ ChatWidget"
 
 function App() {
 
   return (
     <>
-  <Chatbot/>
+    <ChatWidget/>
+
     </>
   )
 }
