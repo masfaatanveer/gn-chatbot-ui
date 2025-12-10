@@ -24,9 +24,20 @@ const parseResponse = (originalText) => {
   const dateRegex = /\b((?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*)\b(?:.{0,20}?\d{1,2}(?:st|nd|rd|th)?)?/i;
   const singleTimeRegex = /\b((?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*[AaPp][Mm])\b/g;
 
+  // --- UPDATED BLOCKED PHRASES (Fix for "Your area" button) ---
   const blockedPhrases = [
-    "your best phone number", "your full name", "provide the following",
-    "is your", "what is", "please provide", "tell me"
+    "your best phone number", 
+    "your full name", 
+    "provide the following",
+    "is your", 
+    "what is", 
+    "please provide", 
+    "tell me",
+    "your area",      // <-- Blocked
+    "your location",  // <-- Blocked
+    "your address",   // <-- Blocked
+    "your zip code",  // <-- Blocked
+    "following"
   ];
 
   let currentContextDate = null;
@@ -35,6 +46,7 @@ const parseResponse = (originalText) => {
     let lineText = line.trim();
     let extractedFromLine = false;
 
+    // A. Check for Time Ranges
     const rangeMatches = lineText.match(timeRangeRegex);
     if (rangeMatches) {
       rangeMatches.forEach(range => {
@@ -44,6 +56,7 @@ const parseResponse = (originalText) => {
       if (lineText.length < 5) extractedFromLine = true; 
     }
 
+    // B. Check for Sentence Lists
     const sentenceMatch = lineText.match(sentenceListRegex);
     if (sentenceMatch) {
       const rawList = sentenceMatch[1].trim(); 
@@ -71,6 +84,7 @@ const parseResponse = (originalText) => {
       }
     }
 
+    // C. Check for Bullet Points
     const bulletMatch = lineText.match(bulletRegex);
     if (bulletMatch) {
       let option = bulletMatch[1].trim().replace(/\*\*/g, ""); 
@@ -81,6 +95,7 @@ const parseResponse = (originalText) => {
       }
     }
 
+    // D. Check for Dates
     const dateMatch = lineText.match(dateRegex);
     if (dateMatch) {
         currentContextDate = dateMatch[0].trim().replace(/[:,-]+$/, "");
@@ -92,6 +107,7 @@ const parseResponse = (originalText) => {
         }
     }
 
+    // E. Check for Single Times
     const timeMatches = lineText.match(singleTimeRegex);
     if (timeMatches) {
       timeMatches.forEach((time) => {
@@ -108,6 +124,10 @@ const parseResponse = (originalText) => {
     }
 
     const isJunk = lineText === "" || /^[\*\-\•\s]+$/.test(lineText);
+    
+    // Check if remaining text is BLOCKED to prevent it showing as regular text button
+    const isLineBlocked = blockedPhrases.some(phrase => lineText.toLowerCase().includes(phrase));
+    
     if (!isJunk && !extractedFromLine && lineText.length > 1) {
       linesToKeep.push(lineText);
     }
@@ -279,7 +299,7 @@ export default function ChatWidget() {
       setLoading(false);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [message, sessionId, macId, activeTab]); // Added macId to dependencies
+  }, [message, sessionId, macId, activeTab]); 
 
   return (
     <>
