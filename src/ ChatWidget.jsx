@@ -33,10 +33,10 @@ const parseResponse = (originalText) => {
     "what is", 
     "please provide", 
     "tell me",
-    "your area",      // <-- Blocked
-    "your location",  // <-- Blocked
-    "your address",   // <-- Blocked
-    "your zip code",  // <-- Blocked
+    "your area",      
+    "your location",  
+    "your address",  
+    "your zip code",  
     "following"
   ];
 
