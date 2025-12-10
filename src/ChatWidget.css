@@ -20,7 +20,7 @@ body {
 
 
 
-/* --- Floating Trigger Button & Wrapper (Same as before) --- */
+/* --- Floating Trigger Button & Wrapper  --- */
 .cw-trigger-btn {
   position: fixed;
   bottom: 24px;
@@ -37,6 +37,26 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   z-index: 9999;
   transition: transform 0.3s, background 0.3s;
+
+
+   position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+
+  width: 60px;
+  height: 60px;
+
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 99999;
+  border: 1px solid rgba(255,255,255,0.15);
+
+  background: radial-gradient(circle, #5c1212 40%, #3a0a0a 100%);
+  box-shadow: 0 0 18px rgba(193, 19, 46, 0.45);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .cw-trigger-btn:hover {
@@ -51,6 +71,7 @@ body {
   background: #5c1518;
   transform: rotate(90deg);
 }
+
 
 .cw-greeting-bubble {
   position: fixed;
@@ -71,15 +92,57 @@ body {
   align-items: center;
   gap: 8px;
   backdrop-filter: blur(10px);
+  transform-origin: bottom right;
 }
+
+
+.cw-greeting-show {
+  animation: zoomFadeUp 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+
+.cw-greeting-hide {
+  animation: zoomFadeDown 0.45s cubic-bezier(0.55, 0, 0.55, 0.2) forwards;
+}
+
+/* --- KEYFRAMES --- */
+@keyframes zoomFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.75);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes zoomFadeDown {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px) scale(0.75);
+  }
+}
+
 
 /* WRAPPER POSITION */
 .cw-wrapper {
-  position: fixed;
-  bottom: 100px;
-  right: 24px;
+  position: fixed !important;
+  bottom: 100px !important;
+  right: 24px !important;
+  left: auto !important;
+  top: auto !important;
+
   z-index: 9999;
   font-family: var(--font-stack);
+
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
 }
 
 /* MAIN GLASS CARD */
@@ -92,7 +155,7 @@ body {
   padding: 24px;
   border-radius: 32px;
 
-  /* 🔥 TRANSPARENT GRADIENT BACKGROUND */
+  /*  TRANSPARENT GRADIENT BACKGROUND */
   background:
     linear-gradient(rgb(55, 22, 25) 0%,
       rgb(46, 16, 20) 8%,
@@ -113,6 +176,10 @@ body {
   overflow: hidden;
   opacity: 1;
   animation: cwFadeUp 0.3s ease-out;
+
+  margin: 0 !important;
+  transform: none !important;
+
 }
 
 /* ENTRANCE ANIMATION */
@@ -128,7 +195,7 @@ body {
   }
 }
 
-/* 🔥 LEFT RED GLOW LINE */
+/*LEFT RED GLOW LINE */
 .cw-left-line {
   position: absolute;
   left: 0;
@@ -152,7 +219,7 @@ body {
   z-index: 2;
 }
 
-/* 🔥 LIGHT OVERLAY SHINE */
+/* LIGHT OVERLAY SHINE */
 .cw-overlay {
   position: absolute;
   inset: 0;
@@ -210,7 +277,7 @@ body {
 .cw-title-row {
   display: flex;
   align-items: center;
-  gap: 8px; /* Text aur Dot ke beech ka gap */
+  gap: 8px;
 }
 .cw-title {
   font-family: "SF Pro Display", -apple-system, system-ui, sans-serif;
@@ -222,9 +289,9 @@ body {
 .cw-status-dot {
   width: 8px;
   height: 8px;
-  background-color: rgb(193, 19, 46); /* Theme Red Color */
-  border-radius: 50%; /* Circle shape */
-  box-shadow: 0 0 8px rgba(193, 19, 46, 0.8); /* Glow effect */
+  background-color: rgb(193, 19, 46); 
+  border-radius: 50%; 
+  box-shadow: 0 0 8px rgba(193, 19, 46, 0.8); 
   flex-shrink: 0;
 }
 
@@ -340,8 +407,6 @@ body {
 
   transition: all 0.25s ease;
 
-  /* --- Animation Added Here --- */
-  /* 'both' ensure karta hai ki animation start hone se pehle button invisible rahe */
   animation: cwChipEnter 0.6s cubic-bezier(0.21, 1.02, 0.73, 1) both;
 }
 
@@ -491,7 +556,6 @@ body {
 
 .cw-send-btn:hover svg {
   stroke: white;
-  /* change SVG stroke color on hover */
 }
 
 .cw-powered {
@@ -516,13 +580,205 @@ body {
   border-radius: 10px;
 }
 
-/* Mobile */
+/* ==========================================================
+   PERFECT RESPONSIVE SYSTEM — ALL DEVICES SUPPORTED
+   ========================================================== */
+
+/* Always keep rounded — applies to ALL devices */
+.cw-container {
+  border-radius: 32px !important;
+}
+
+/* Extra Large Screens (1440px+) */
+@media (min-width: 1440px) {
+  .cw-container {
+    width: 480px;
+    height: 700px;
+  }
+}
+
+/*  Desktop / Laptop (1280px to 1440px) */
+@media (max-width: 1280px) {
+  .cw-container {
+    width: 440px;
+    height: 680px;
+  }
+}
+
+/*  Medium Laptop / Small Desktop */
+@media (max-width: 1080px) {
+  .cw-container {
+    width: 420px;
+    height: 650px;
+  }
+}
+
+/*  Tablets (1024px – 768px) */
+@media (max-width: 1024px) {
+  .cw-container {
+    width: 400px;
+    height: 630px;
+  }
+
+  .cw-trigger-btn {
+    width: 58px;
+    height: 58px;
+  }
+}
+
+/* Large Phones / Small Tablets (768px – 600px) */
+@media (max-width: 768px) {
+  .cw-container {
+    width: 380px;
+    height: 620px;
+    padding: 20px;
+  }
+
+  .cw-title {
+    font-size: 18px;
+  }
+
+  .cw-chip-btn {
+    font-size: 12px;
+    height: 30px;
+  }
+
+  .cw-user-bubble,
+  .cw-bot-bubble {
+    font-size: 14px;
+  }
+
+  .cw-trigger-btn {
+    width: 56px;
+    height: 56px;
+  }
+}
+
+/*  Phones up to 600px */
+@media (max-width: 600px) {
+
+  .cw-container {
+    width: 92vw !important;
+    height: 78vh !important;
+    padding: 18px !important;
+  }
+
+  .cw-wrapper {
+    bottom: 90px !important;
+    right: 14px !important;
+  }
+
+  .cw-trigger-btn {
+    width: 54px !important;
+    height: 54px !important;
+    bottom: 18px !important;
+    right: 18px !important;
+  }
+
+  .cw-title {
+    font-size: 16.5px;
+  }
+
+  .cw-input {
+    font-size: 14px;
+  }
+}
+
+/* Extra small phones (≤ 420px) */
+@media (max-width: 420px) {
+
+  .cw-container {
+    width: 94vw !important;
+    height: 80vh !important;
+  }
+
+  .cw-wrapper {
+    right: 10px !important;
+    bottom: 80px !important;
+  }
+
+  .cw-trigger-btn {
+    width: 50px !important;
+    height: 50px !important;
+    right: 14px !important;
+  }
+}
+
+/*  Small Phones (480px – 400px) */
 @media (max-width: 480px) {
   .cw-container {
     width: 100%;
     height: 100vh;
-    bottom: 0;
-    right: 0;
-    border-radius: 0;
+    padding: 16px;
+  }
+
+  .cw-header-content {
+    gap: 10px;
+  }
+
+  .cw-title {
+    font-size: 16px;
+  }
+
+  .cw-subtitle {
+    font-size: 12px;
+  }
+
+  .cw-chip-btn {
+    font-size: 11px;
+    height: 28px;
+    padding: 0 12px;
+  }
+
+  .cw-user-bubble,
+  .cw-bot-bubble {
+    font-size: 13px;
+  }
+
+  .cw-trigger-btn {
+    width: 52px;
+    height: 52px;
+  }
+}
+
+/* Very Small Phones (400px – 360px) */
+@media (max-width: 400px) {
+  .cw-container {
+    padding: 14px;
+  }
+
+  .cw-title {
+    font-size: 15px;
+  }
+
+  .cw-chip-btn {
+    font-size: 10.5px;
+    padding: 0 10px;
+  }
+}
+
+/*  ULTRA Small Screens (≤ 330px width) */
+@media (max-width: 330px) {
+  .cw-container {
+    padding: 12px;
+  }
+
+  .cw-title {
+    font-size: 14px;
+  }
+
+  .cw-body {
+    gap: 10px;
+  }
+
+  .cw-chip-btn {
+    height: 26px;
+    font-size: 10px;
+    padding: 0 8px;
+  }
+
+  .cw-user-bubble,
+  .cw-bot-bubble {
+    font-size: 12px;
   }
 }
