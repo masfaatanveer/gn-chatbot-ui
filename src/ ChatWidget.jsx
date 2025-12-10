@@ -24,9 +24,20 @@ const parseResponse = (originalText) => {
   const dateRegex = /\b((?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*)\b(?:.{0,20}?\d{1,2}(?:st|nd|rd|th)?)?/i;
   const singleTimeRegex = /\b((?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*[AaPp][Mm])\b/g;
 
+  // --- UPDATED BLOCKED PHRASES (Fix for "Your area" button) ---
   const blockedPhrases = [
-    "your best phone number", "your full name", "provide the following",
-    "is your", "what is", "please provide", "tell me"
+    "your best phone number", 
+    "your full name", 
+    "provide the following",
+    "is your", 
+    "what is", 
+    "please provide", 
+    "tell me",
+    "your area",      
+    "your location",  
+    "your address",  
+    "your zip code",  
+    "following"
   ];
 
   let currentContextDate = null;
@@ -35,6 +46,7 @@ const parseResponse = (originalText) => {
     let lineText = line.trim();
     let extractedFromLine = false;
 
+    // A. Check for Time Ranges
     const rangeMatches = lineText.match(timeRangeRegex);
     if (rangeMatches) {
       rangeMatches.forEach(range => {
@@ -44,6 +56,7 @@ const parseResponse = (originalText) => {
       if (lineText.length < 5) extractedFromLine = true; 
     }
 
+    // B. Check for Sentence Lists
     const sentenceMatch = lineText.match(sentenceListRegex);
     if (sentenceMatch) {
       const rawList = sentenceMatch[1].trim(); 
@@ -71,6 +84,7 @@ const parseResponse = (originalText) => {
       }
     }
 
+    // C. Check for Bullet Points
     const bulletMatch = lineText.match(bulletRegex);
     if (bulletMatch) {
       let option = bulletMatch[1].trim().replace(/\*\*/g, ""); 
@@ -81,6 +95,7 @@ const parseResponse = (originalText) => {
       }
     }
 
+    // D. Check for Dates
     const dateMatch = lineText.match(dateRegex);
     if (dateMatch) {
         currentContextDate = dateMatch[0].trim().replace(/[:,-]+$/, "");
@@ -92,6 +107,7 @@ const parseResponse = (originalText) => {
         }
     }
 
+    // E. Check for Single Times
     const timeMatches = lineText.match(singleTimeRegex);
     if (timeMatches) {
       timeMatches.forEach((time) => {
@@ -108,6 +124,10 @@ const parseResponse = (originalText) => {
     }
 
     const isJunk = lineText === "" || /^[\*\-\•\s]+$/.test(lineText);
+    
+    // Check if remaining text is BLOCKED to prevent it showing as regular text button
+    const isLineBlocked = blockedPhrases.some(phrase => lineText.toLowerCase().includes(phrase));
+    
     if (!isJunk && !extractedFromLine && lineText.length > 1) {
       linesToKeep.push(lineText);
     }
@@ -119,7 +139,7 @@ const parseResponse = (originalText) => {
   return { text: finalText, options: detectedOptions };
 };
 
-// --- SUB-COMPONENTS (Defined OUTSIDE to fix focus issue) ---
+// --- SUB-COMPONENTS ---
 
 const Header = () => (
   <div className="cw-header-wrapper">
@@ -147,7 +167,6 @@ const StaticBotGreeting = () => (
   </div>
 );
 
-// Using forwardRef to allow the parent (ChatWidget) to focus the input
 const FooterInput = forwardRef(({ message, setMessage, sendMessage, loading }, ref) => (
   <div className="cw-footer">
     <div className="cw-input-container">
@@ -159,7 +178,7 @@ const FooterInput = forwardRef(({ message, setMessage, sendMessage, loading }, r
         onKeyDown={(e) => e.key === "Enter" && sendMessage()}
         placeholder="Ask anything..."
         className="cw-input"
-        autoFocus // Added HTML autoFocus attribute as backup
+        autoFocus
       />
       <button onClick={() => sendMessage()} disabled={loading} className="cw-send-btn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C1132E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -180,24 +199,36 @@ export default function ChatWidget() {
   const [chatLog, setChatLog] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showGreeting, setShowGreeting] = useState(true);
+  
+  // State for IDs
   const [sessionId, setSessionId] = useState("");
+  const [macId, setMacId] = useState(""); // <-- MAC ID State
 
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
 
+  // Initialize Session ID AND MAC ID
   useEffect(() => {
+    // 1. Session ID (Temporary per tab/session)
     let session = sessionStorage.getItem("chat_session_id");
     if (!session) {
       session = generateUUID();
       sessionStorage.setItem("chat_session_id", session);
     }
     setSessionId(session);
+
+    // 2. MAC ID (Persistent Device ID using LocalStorage)
+    let deviceId = localStorage.getItem("chat_device_mac_id");
+    if (!deviceId) {
+      deviceId = generateUUID();
+      localStorage.setItem("chat_device_mac_id", deviceId);
+    }
+    setMacId(deviceId);
   }, []);
 
-  // Stronger Auto-Focus Logic
+  // Auto-Focus Logic
   useEffect(() => {
     if (open && !loading) {
-      // Small timeout ensures DOM is ready
       setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
@@ -240,7 +271,11 @@ export default function ChatWidget() {
       const res = await fetch("https://automate.ththeater.com/webhook/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: msgToSend, sessionId }),
+        body: JSON.stringify({ 
+          message: msgToSend, 
+          sessionId: sessionId,
+          macId: macId // <-- Sending MAC ID in payload
+        }),
       });
 
       if (!res.ok) throw new Error("Server error");
@@ -262,10 +297,9 @@ export default function ChatWidget() {
       ]);
     } finally {
       setLoading(false);
-      // Ensure focus returns to input after loading
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [message, sessionId, activeTab]);
+  }, [message, sessionId, macId, activeTab]); 
 
   return (
     <>
@@ -370,7 +404,6 @@ export default function ChatWidget() {
                 )}
               </div>
 
-              {/* FooterInput is now outside main render, passed via ref */}
               <FooterInput 
                 ref={inputRef}
                 message={message}
