@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback, forwardRef } from "react";
+import { useState, useEffect, useRef, useCallback, forwardRef } from "react";
 import Logo from './img/logo.jpg';
 import './ChatWidget.css';
 
-// --- UTILITIES (Logic Separated) ---
+// --- UTILITIES (Logic Updated for Strict Filtering) ---
 
 const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -18,26 +18,24 @@ const parseResponse = (originalText) => {
   let detectedOptions = [];
   let linesToKeep = [];
 
+  // Regex Definitions
   const sentenceListRegex = /(?:offer|provide|include|services?|serve|areas?|towns?|cities?|locations?|cover|in|available|days?|times?|slots?)(?:\s+|:\s*|\s+are\s*:?\s*|\s+on\s*)([\w\s,]+(?:and\s+[\w\s]+)?)/i;
-  const bulletRegex = /^[\-\*\•\d][\.\)]?\s+(.+)$/;
+  // Note: Removed generic bullet regex to prevent unwanted chips
+  const bulletSymbolRegex = /^[\-\*\•\d][\.\)]?\s+/; 
   const timeRangeRegex = /\b((?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*[AaPp][Mm]\s*-\s*(?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*[AaPp][Mm])\b/g;
   const dateRegex = /\b((?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*)\b(?:.{0,20}?\d{1,2}(?:st|nd|rd|th)?)?/i;
   const singleTimeRegex = /\b((?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*[AaPp][Mm])\b/g;
 
-  // --- UPDATED BLOCKED PHRASES (Fix for "Your area" button) ---
+  // Strict Keywords for Services (Chips only allowed if they match these or are Dates/Times/Areas)
+  const serviceKeywords = ["roof", "siding", "gutter", "repair", "install", "inspect", "estimate", "leak", "shingle", "replacement"];
+
+  // Phrases to strictly block from becoming chips
   const blockedPhrases = [
     "your best phone number", 
     "your full name", 
     "provide the following",
-    "is your", 
-    "what is", 
-    "please provide", 
-    "tell me",
-    "your area",      
-    "your location",  
-    "your address",  
-    "your zip code",  
-    "following"
+    "is your", "what is", "please provide", "tell me",
+    "your area", "your location", "your address", "your zip code", "following"
   ];
 
   let currentContextDate = null;
@@ -46,17 +44,35 @@ const parseResponse = (originalText) => {
     let lineText = line.trim();
     let extractedFromLine = false;
 
-    // A. Check for Time Ranges
+    // 1. CHECK FOR TIME RANGES (e.g., 10 AM - 2 PM)
     const rangeMatches = lineText.match(timeRangeRegex);
     if (rangeMatches) {
       rangeMatches.forEach(range => {
          if (!detectedOptions.includes(range)) detectedOptions.push(range);
       });
       lineText = lineText.replace(timeRangeRegex, "").trim();
-      if (lineText.length < 5) extractedFromLine = true; 
+      // If line is mostly just the time, mark extracted
+      if (lineText.length < 10) extractedFromLine = true; 
     }
 
-    // B. Check for Sentence Lists
+    // 2. CHECK FOR DATES / DAYS (e.g., Monday, Nov 12th)
+    const dateMatch = lineText.match(dateRegex);
+    if (dateMatch) {
+        // Capture the full date string found
+        let foundDate = dateMatch[0].trim().replace(/[:,-]+$/, "");
+        currentContextDate = foundDate; // Save for context with times
+        
+        // Only make it a chip if the line is short (mostly just the date)
+        if (lineText.length < 25 && !extractedFromLine) {
+           if (!detectedOptions.includes(foundDate)) {
+               detectedOptions.push(foundDate);
+               extractedFromLine = true;
+           }
+        }
+    }
+
+    // 3. CHECK FOR SENTENCE LISTS (Areas, Services context)
+    // Looks for "We cover: NY, NJ" or "Services: Roofing, Siding"
     const sentenceMatch = lineText.match(sentenceListRegex);
     if (sentenceMatch) {
       const rawList = sentenceMatch[1].trim(); 
@@ -70,13 +86,19 @@ const parseResponse = (originalText) => {
           items.forEach(item => {
             let cleanItem = item.replace(/[.?!]+$/, ""); 
             const isBlocked = blockedPhrases.some(phrase => cleanItem.toLowerCase().includes(phrase));
+            
+            // Allow if it's a Day/Date OR matches Service keywords OR line implies Location/Area
             const isDay = /^(mon|tue|wed|thu|fri|sat|sun)/i.test(cleanItem);
+            const isService = serviceKeywords.some(k => cleanItem.toLowerCase().includes(k));
+            const isLocationContext = /areas?|towns?|cities?|locations?|cover/i.test(lineText);
 
-            if (!isBlocked && ((cleanItem.length > 2 && cleanItem.length < 35) || isDay)) {
-               cleanItem = cleanItem.charAt(0).toUpperCase() + cleanItem.slice(1);
-               if (!detectedOptions.includes(cleanItem)) {
-                  detectedOptions.push(cleanItem);
-                  itemsAdded++;
+            if (!isBlocked && cleanItem.length > 2 && cleanItem.length < 35) {
+               if (isDay || isService || isLocationContext) {
+                  cleanItem = cleanItem.charAt(0).toUpperCase() + cleanItem.slice(1);
+                  if (!detectedOptions.includes(cleanItem)) {
+                      detectedOptions.push(cleanItem);
+                      itemsAdded++;
+                  }
                }
             }
           });
@@ -84,34 +106,34 @@ const parseResponse = (originalText) => {
       }
     }
 
-    // C. Check for Bullet Points
-    const bulletMatch = lineText.match(bulletRegex);
-    if (bulletMatch) {
-      let option = bulletMatch[1].trim().replace(/\*\*/g, ""); 
+    // 4. CHECK FOR BULLET POINTS (STRICT MODE)
+    // Only accept bullet points if they are specifically Services, Dates, or Times.
+    // Generic text bullets will remain as text.
+    const isBullet = bulletSymbolRegex.test(lineText);
+    if (isBullet && !extractedFromLine) {
+      let option = lineText.replace(bulletSymbolRegex, "").replace(/\*\*/g, "").trim();
+      
       const isBlocked = blockedPhrases.some(phrase => option.toLowerCase().includes(phrase));
-      if (!isBlocked && option.length < 60) {
-          detectedOptions.push(option);
-          extractedFromLine = true;
+      
+      // Strict Filters for Bullets
+      const isService = serviceKeywords.some(k => option.toLowerCase().includes(k));
+      const isDay = /^(mon|tue|wed|thu|fri|sat|sun)/i.test(option);
+      const isTime = /\d{1,2}(?::\d{2})?\s*[AaPp][Mm]/.test(option);
+
+      if (!isBlocked && option.length < 50) {
+          if (isService || isDay || isTime) {
+             detectedOptions.push(option);
+             extractedFromLine = true;
+          }
       }
     }
 
-    // D. Check for Dates
-    const dateMatch = lineText.match(dateRegex);
-    if (dateMatch) {
-        currentContextDate = dateMatch[0].trim().replace(/[:,-]+$/, "");
-        if (lineText.length < 15 && !extractedFromLine) {
-           if (!detectedOptions.includes(currentContextDate)) {
-               detectedOptions.push(currentContextDate);
-               extractedFromLine = true;
-           }
-        }
-    }
-
-    // E. Check for Single Times
+    // 5. CHECK FOR SINGLE TIMES
     const timeMatches = lineText.match(singleTimeRegex);
     if (timeMatches) {
       timeMatches.forEach((time) => {
         let label = time;
+        // Combine Date + Time if context exists (User requirement: Date/Day sath)
         if (currentContextDate && !label.toLowerCase().includes(currentContextDate.toLowerCase())) {
           label = `${currentContextDate} - ${time}`;
         }
@@ -120,13 +142,11 @@ const parseResponse = (originalText) => {
            detectedOptions.push(label);
         }
       });
+      // Remove time from text to avoid duplication, but keep line if it has other info
       lineText = lineText.replace(singleTimeRegex, "").trim();
     }
 
     const isJunk = lineText === "" || /^[\*\-\•\s]+$/.test(lineText);
-    
-    // Check if remaining text is BLOCKED to prevent it showing as regular text button
-    const isLineBlocked = blockedPhrases.some(phrase => lineText.toLowerCase().includes(phrase));
     
     if (!isJunk && !extractedFromLine && lineText.length > 1) {
       linesToKeep.push(lineText);
@@ -155,7 +175,13 @@ const Header = () => (
         <p className="cw-subtitle">Here to help with roofing, siding or gutters.</p>
       </div>
     </div>
-    <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', marginTop: '20px' }}></div>
+    <div 
+      style={{ 
+        marginTop: '16px', 
+        height: '1px', 
+        background: 'linear-gradient(90deg, transparent 0%, rgba(193, 19, 46, 0.15) 50%, transparent 100%)' 
+      }} 
+    ></div>
   </div>
 );
 
@@ -187,7 +213,7 @@ const FooterInput = forwardRef(({ message, setMessage, sendMessage, loading }, r
         </svg>
       </button>
     </div>
-    <div className="cw-powered">Powered by Quikr AI</div>
+  <a href="https://www.quikrai.us/" target="_blank">  <div className="cw-powered">Powered by Quikr AI</div>  </a>  
   </div>
 ));
 
@@ -202,7 +228,7 @@ export default function ChatWidget() {
   
   // State for IDs
   const [sessionId, setSessionId] = useState("");
-  const [macId, setMacId] = useState(""); // <-- MAC ID State
+  const [macId, setMacId] = useState("");
 
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -274,7 +300,7 @@ export default function ChatWidget() {
         body: JSON.stringify({ 
           message: msgToSend, 
           sessionId: sessionId,
-          macId: macId // <-- Sending MAC ID in payload
+          macId: macId
         }),
       });
 
