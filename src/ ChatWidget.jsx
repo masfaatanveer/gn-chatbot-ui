@@ -263,6 +263,8 @@ export default function ChatWidget() {
     }
   }, [open, loading, activeTab]);
 
+
+  
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatLog, loading, activeTab]);
