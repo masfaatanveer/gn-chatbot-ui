@@ -157,7 +157,7 @@ body {
 
   /*  TRANSPARENT GRADIENT BACKGROUND */
   background:
-    linear-gradient(rgb(55, 22, 25) 0%,
+    linear-gradient(rgba(255, 3, 3, 0.349) 0%,
       rgb(46, 16, 20) 8%,
       rgb(3, 3, 3) 30%,
       rgba(10, 10, 10, 0.719) 50%,
@@ -194,6 +194,8 @@ body {
     transform: translateY(0);
   }
 }
+
+
 
 /*LEFT RED GLOW LINE */
 .cw-left-line {
@@ -312,29 +314,59 @@ body {
   display: flex;
   flex-direction: column;
   gap: 15px;
-  /* Spacing between messages */
 }
 
-/* BOT MESSAGE (Left side) */
+/* BOT MESSAGE --- */
 .cw-bot-bubble {
-  background: var(--glass-bg);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 16px;
-  border-radius: 16px;
-  border-top-left-radius: 4px;
-  color: #eee;
-  font-size: 15px;
-  line-height: 1.5;
-  backdrop-filter: blur(5px);
+  position: relative;
   align-self: flex-start;
-  max-width: 85%;
+  max-width: 70%;
+  padding: 16px 20px;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.52;
+  letter-spacing: 0.5px;
+  color: white;
+  text-shadow: rgba(0, 0, 0, 0.3) 0px 1px 2px;
+  white-space: pre-wrap; 
+  word-wrap: break-word; 
+  box-sizing: border-box;
+  z-index: 10; 
+  background: linear-gradient(135deg, rgba(193, 19, 46, 0.12) 0%, rgba(255, 255, 255, 0.1) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+ 
+  /* Borders */
+  border-radius: 20px 8px 20px 20px; 
+  border-style: solid;
+  border-width: 1px 1px 1px 3px; 
+  border-color: rgba(193, 19, 46, 0.25) rgba(193, 19, 46, 0.25) rgba(193, 19, 46, 0.25) rgb(193, 19, 46);
+  
+  /* Shadows */
+  box-shadow: rgba(193, 19, 46, 0.15) 0px 2px 8px, 
+              rgba(193, 19, 46, 0.15) 0px 1px 0px inset;
+              
 }
 
-/* USER MESSAGE (Right side with Avatar) */
+
+.cw-bot-bubble::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(193, 19, 46, 0.08) 0%, transparent 40%);
+  z-index: 0;
+}
+.cw-bot-bubble p, 
+.cw-bot-bubble span {
+  position: relative;
+  z-index: 10;
+}
+
+/* USER MESSAGE       MM */
 .cw-user-message-row {
   display: flex;
   align-items: flex-end;
-  /* Align avatar to bottom of bubble */
   justify-content: flex-end;
   gap: 10px;
   align-self: flex-end;
