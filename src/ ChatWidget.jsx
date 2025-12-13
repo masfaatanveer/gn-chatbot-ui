@@ -2,8 +2,9 @@ import { useState, useEffect, useRef, useCallback, forwardRef } from "react";
 import Logo from './img/logo.jpg';
 import './ChatWidget.css';
 
-// --- UTILITIES (Logic Updated for Strict Filtering) ---
+// --- UTILITIES ---
 
+// Generate a random ID for Sessions and Devices
 const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     const r = Math.random() * 16 | 0;
@@ -12,28 +13,26 @@ const generateUUID = () => {
   });
 };
 
+// Logic to parse the AI response and extract clickable "Chips" (Options)
 const parseResponse = (originalText) => {
   const cleanText = originalText.replace(/\*\*/g, ""); 
   const lines = cleanText.split("\n");
   let detectedOptions = [];
   let linesToKeep = [];
 
-  // Regex Definitions
+  // Regex for detecting lists, times, dates, and bullets
   const sentenceListRegex = /(?:offer|provide|include|services?|serve|areas?|towns?|cities?|locations?|cover|in|available|days?|times?|slots?)(?:\s+|:\s*|\s+are\s*:?\s*|\s+on\s*)([\w\s,]+(?:and\s+[\w\s]+)?)/i;
-  // Note: Removed generic bullet regex to prevent unwanted chips
   const bulletSymbolRegex = /^[\-\*\•\d][\.\)]?\s+/; 
   const timeRangeRegex = /\b((?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*[AaPp][Mm]\s*-\s*(?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*[AaPp][Mm])\b/g;
   const dateRegex = /\b((?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*)\b(?:.{0,20}?\d{1,2}(?:st|nd|rd|th)?)?/i;
   const singleTimeRegex = /\b((?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*[AaPp][Mm])\b/g;
 
-  // Strict Keywords for Services (Chips only allowed if they match these or are Dates/Times/Areas)
+  // Strict keywords to ensure chips are relevant
   const serviceKeywords = ["roof", "siding", "gutter", "repair", "install", "inspect", "estimate", "leak", "shingle", "replacement"];
 
-  // Phrases to strictly block from becoming chips
+  // Phrases to ignore (don't make these into chips)
   const blockedPhrases = [
-    "your best phone number", 
-    "your full name", 
-    "provide the following",
+    "your best phone number", "your full name", "provide the following",
     "is your", "what is", "please provide", "tell me",
     "your area", "your location", "your address", "your zip code", "following"
   ];
@@ -44,25 +43,22 @@ const parseResponse = (originalText) => {
     let lineText = line.trim();
     let extractedFromLine = false;
 
-    // 1. CHECK FOR TIME RANGES (e.g., 10 AM - 2 PM)
+    // 1. Check for Time Ranges (e.g., "10 AM - 2 PM")
     const rangeMatches = lineText.match(timeRangeRegex);
     if (rangeMatches) {
       rangeMatches.forEach(range => {
          if (!detectedOptions.includes(range)) detectedOptions.push(range);
       });
       lineText = lineText.replace(timeRangeRegex, "").trim();
-      // If line is mostly just the time, mark extracted
       if (lineText.length < 10) extractedFromLine = true; 
     }
 
-    // 2. CHECK FOR DATES / DAYS (e.g., Monday, Nov 12th)
+    // 2. Check for Dates (e.g., "Monday", "Nov 12th")
     const dateMatch = lineText.match(dateRegex);
     if (dateMatch) {
-        // Capture the full date string found
         let foundDate = dateMatch[0].trim().replace(/[:,-]+$/, "");
-        currentContextDate = foundDate; // Save for context with times
+        currentContextDate = foundDate; 
         
-        // Only make it a chip if the line is short (mostly just the date)
         if (lineText.length < 25 && !extractedFromLine) {
            if (!detectedOptions.includes(foundDate)) {
                detectedOptions.push(foundDate);
@@ -71,8 +67,7 @@ const parseResponse = (originalText) => {
         }
     }
 
-    // 3. CHECK FOR SENTENCE LISTS (Areas, Services context)
-    // Looks for "We cover: NY, NJ" or "Services: Roofing, Siding"
+    // 3. Check for Lists (Services or Locations)
     const sentenceMatch = lineText.match(sentenceListRegex);
     if (sentenceMatch) {
       const rawList = sentenceMatch[1].trim(); 
@@ -87,7 +82,6 @@ const parseResponse = (originalText) => {
             let cleanItem = item.replace(/[.?!]+$/, ""); 
             const isBlocked = blockedPhrases.some(phrase => cleanItem.toLowerCase().includes(phrase));
             
-            // Allow if it's a Day/Date OR matches Service keywords OR line implies Location/Area
             const isDay = /^(mon|tue|wed|thu|fri|sat|sun)/i.test(cleanItem);
             const isService = serviceKeywords.some(k => cleanItem.toLowerCase().includes(k));
             const isLocationContext = /areas?|towns?|cities?|locations?|cover/i.test(lineText);
@@ -98,7 +92,7 @@ const parseResponse = (originalText) => {
                   if (!detectedOptions.includes(cleanItem)) {
                       detectedOptions.push(cleanItem);
                       itemsAdded++;
-                  }
+                  }  
                }
             }
           });
@@ -106,16 +100,12 @@ const parseResponse = (originalText) => {
       }
     }
 
-    // 4. CHECK FOR BULLET POINTS (STRICT MODE)
-    // Only accept bullet points if they are specifically Services, Dates, or Times.
-    // Generic text bullets will remain as text.
+    // 4. Check for Bullet Points
     const isBullet = bulletSymbolRegex.test(lineText);
     if (isBullet && !extractedFromLine) {
       let option = lineText.replace(bulletSymbolRegex, "").replace(/\*\*/g, "").trim();
-      
       const isBlocked = blockedPhrases.some(phrase => option.toLowerCase().includes(phrase));
       
-      // Strict Filters for Bullets
       const isService = serviceKeywords.some(k => option.toLowerCase().includes(k));
       const isDay = /^(mon|tue|wed|thu|fri|sat|sun)/i.test(option);
       const isTime = /\d{1,2}(?::\d{2})?\s*[AaPp][Mm]/.test(option);
@@ -128,12 +118,11 @@ const parseResponse = (originalText) => {
       }
     }
 
-    // 5. CHECK FOR SINGLE TIMES
+    // 5. Check for Single Times
     const timeMatches = lineText.match(singleTimeRegex);
     if (timeMatches) {
       timeMatches.forEach((time) => {
         let label = time;
-        // Combine Date + Time if context exists (User requirement: Date/Day sath)
         if (currentContextDate && !label.toLowerCase().includes(currentContextDate.toLowerCase())) {
           label = `${currentContextDate} - ${time}`;
         }
@@ -142,7 +131,6 @@ const parseResponse = (originalText) => {
            detectedOptions.push(label);
         }
       });
-      // Remove time from text to avoid duplication, but keep line if it has other info
       lineText = lineText.replace(singleTimeRegex, "").trim();
     }
 
@@ -220,30 +208,49 @@ const FooterInput = forwardRef(({ message, setMessage, sendMessage, loading }, r
 // --- MAIN COMPONENT ---
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("home");
-  const [message, setMessage] = useState("");
-  const [chatLog, setChatLog] = useState([]);
+  const [message, setMessage] = useState(""); // Input message state
   const [loading, setLoading] = useState(false);
   const [showGreeting, setShowGreeting] = useState(true);
   
-  // State for IDs
+  // States for IDs
   const [sessionId, setSessionId] = useState("");
   const [macId, setMacId] = useState("");
 
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Initialize Session ID AND MAC ID
+  // 1. Initialize chat history from LocalStorage (so chat stays after reload)
+  const [chatLog, setChatLog] = useState(() => {
+    try {
+      const saved = localStorage.getItem("chat_history");
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  // 2. Decide starting Tab: If history exists, show Chat, else Home
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem("chat_history") ? "chat" : "home";
+  });
+
+  // 3. Auto-Save chat to LocalStorage (Max 100 messages)
   useEffect(() => {
-    // 1. Session ID (Temporary per tab/session)
-    let session = sessionStorage.getItem("chat_session_id");
+    if (chatLog.length > 0) {
+      const trimmedLog = chatLog.slice(-100);
+      localStorage.setItem("chat_history", JSON.stringify(trimmedLog));
+    }
+  }, [chatLog]);
+
+  // 4. Initialize Session ID and Device ID (Create once, then save)
+  useEffect(() => {
+    let session = localStorage.getItem("chat_session_id");
     if (!session) {
       session = generateUUID();
-      sessionStorage.setItem("chat_session_id", session);
+      localStorage.setItem("chat_session_id", session);
     }
     setSessionId(session);
 
-    // 2. MAC ID (Persistent Device ID using LocalStorage)
     let deviceId = localStorage.getItem("chat_device_mac_id");
     if (!deviceId) {
       deviceId = generateUUID();
@@ -252,7 +259,7 @@ export default function ChatWidget() {
     setMacId(deviceId);
   }, []);
 
-  // Auto-Focus Logic
+  // Auto-Focus on input when chat opens
   useEffect(() => {
     if (open && !loading) {
       setTimeout(() => {
@@ -263,28 +270,30 @@ export default function ChatWidget() {
     }
   }, [open, loading, activeTab]);
 
-
-  
+  // Auto-scroll to bottom
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatLog, loading, activeTab]);
 
+  // Handle opening/closing the widget
   const toggleWidget = () => {
     if (open) {
       setShowGreeting(true);
     } else {
       setShowGreeting(false);
-      setActiveTab("home");
+      setActiveTab(chatLog.length > 0 ? "chat" : "home");
     }
     setOpen(!open);
   };
 
+  // Function to send message to API
   const sendMessage = useCallback(async (msgOverride = null) => {
     const msgToSend = msgOverride || message;
     if (!msgToSend || !msgToSend.trim()) return;
 
     if (activeTab !== "chat") setActiveTab("chat");
 
+    // Optimistic UI Update (Show user message immediately)
     setChatLog((prev) => {
       const updatedHistory = prev.map((msg) => 
         msg.sender === "bot" ? { ...msg, interactionDone: true } : msg
@@ -296,6 +305,7 @@ export default function ChatWidget() {
     setLoading(true);
 
     try {
+      // Send request to webhook
       const res = await fetch("https://automate.ththeater.com/webhook/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -312,6 +322,7 @@ export default function ChatWidget() {
       const responseData = Array.isArray(data) ? data[0] : data;
       const originalText = responseData.output || responseData.text || "Received";
       
+      // Parse response to find options/chips
       const { text, options } = parseResponse(originalText);
 
       setChatLog((p) => [
@@ -331,6 +342,7 @@ export default function ChatWidget() {
 
   return (
     <>
+      {/* Greeting Bubble (Only visible when widget is closed) */}
       {!open && showGreeting && (
         <div
           onClick={toggleWidget}
@@ -341,6 +353,7 @@ export default function ChatWidget() {
         </div>
       )}
 
+      {/* Main Toggle Button */}
       <button onClick={toggleWidget} className={`cw-trigger-btn ${open ? 'open' : ''}`}>
         {open ? (
           <svg width="24" height="24" stroke="white" fill="none" strokeWidth="2" viewBox="0 0 24 24">
@@ -356,6 +369,7 @@ export default function ChatWidget() {
         )}
       </button>
 
+      {/* Main Chat Window */}
       {open && (
         <div className="cw-wrapper">
           <div className="cw-container">
@@ -366,6 +380,7 @@ export default function ChatWidget() {
               <Header />
 
               <div className="cw-body">
+                {/* Home Tab: Chips Only */}
                 {activeTab === "home" && (
                   <>
                     <StaticBotGreeting />
@@ -384,6 +399,7 @@ export default function ChatWidget() {
                   </>
                 )}
 
+                {/* Chat Tab: Conversation History */}
                 {activeTab === "chat" && (
                   <>
                     <StaticBotGreeting />
@@ -405,6 +421,7 @@ export default function ChatWidget() {
                           </div>
                         )}
 
+                        {/* Chips/Options from Bot */}
                         {chat.sender === "bot" && chat.options?.length > 0 && !chat.interactionDone && (
                           <div className="cw-chips-container" style={{ marginBottom: '10px', marginLeft: '2px' }}>
                             {chat.options.map((opt, idx) => (
