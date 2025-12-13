@@ -3,7 +3,7 @@ import Logo from './img/logo.jpg';
 import './ChatWidget.css';
 
 // --- UTILITIES ---
-
+    
 // Generate a random ID for Sessions and Devices
 const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
