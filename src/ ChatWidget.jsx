@@ -3,8 +3,7 @@ import Logo from './img/logo.jpg';
 import './ChatWidget.css';
 
 // --- UTILITIES ---
-    
-// Generate a random ID for Sessions and Devices
+
 const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     const r = Math.random() * 16 | 0;
@@ -13,24 +12,20 @@ const generateUUID = () => {
   });
 };
 
-// Logic to parse the AI response and extract clickable "Chips" (Options)
 const parseResponse = (originalText) => {
   const cleanText = originalText.replace(/\*\*/g, ""); 
   const lines = cleanText.split("\n");
   let detectedOptions = [];
   let linesToKeep = [];
 
-  // Regex for detecting lists, times, dates, and bullets
   const sentenceListRegex = /(?:offer|provide|include|services?|serve|areas?|towns?|cities?|locations?|cover|in|available|days?|times?|slots?)(?:\s+|:\s*|\s+are\s*:?\s*|\s+on\s*)([\w\s,]+(?:and\s+[\w\s]+)?)/i;
   const bulletSymbolRegex = /^[\-\*\•\d][\.\)]?\s+/; 
   const timeRangeRegex = /\b((?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*[AaPp][Mm]\s*-\s*(?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*[AaPp][Mm])\b/g;
   const dateRegex = /\b((?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*)\b(?:.{0,20}?\d{1,2}(?:st|nd|rd|th)?)?/i;
   const singleTimeRegex = /\b((?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*[AaPp][Mm])\b/g;
 
-  // Strict keywords to ensure chips are relevant
   const serviceKeywords = ["roof", "siding", "gutter", "repair", "install", "inspect", "estimate", "leak", "shingle", "replacement"];
 
-  // Phrases to ignore (don't make these into chips)
   const blockedPhrases = [
     "your best phone number", "your full name", "provide the following",
     "is your", "what is", "please provide", "tell me",
@@ -43,7 +38,6 @@ const parseResponse = (originalText) => {
     let lineText = line.trim();
     let extractedFromLine = false;
 
-    // 1. Check for Time Ranges (e.g., "10 AM - 2 PM")
     const rangeMatches = lineText.match(timeRangeRegex);
     if (rangeMatches) {
       rangeMatches.forEach(range => {
@@ -53,7 +47,6 @@ const parseResponse = (originalText) => {
       if (lineText.length < 10) extractedFromLine = true; 
     }
 
-    // 2. Check for Dates (e.g., "Monday", "Nov 12th")
     const dateMatch = lineText.match(dateRegex);
     if (dateMatch) {
         let foundDate = dateMatch[0].trim().replace(/[:,-]+$/, "");
@@ -67,7 +60,6 @@ const parseResponse = (originalText) => {
         }
     }
 
-    // 3. Check for Lists (Services or Locations)
     const sentenceMatch = lineText.match(sentenceListRegex);
     if (sentenceMatch) {
       const rawList = sentenceMatch[1].trim(); 
@@ -81,7 +73,6 @@ const parseResponse = (originalText) => {
           items.forEach(item => {
             let cleanItem = item.replace(/[.?!]+$/, ""); 
             const isBlocked = blockedPhrases.some(phrase => cleanItem.toLowerCase().includes(phrase));
-            
             const isDay = /^(mon|tue|wed|thu|fri|sat|sun)/i.test(cleanItem);
             const isService = serviceKeywords.some(k => cleanItem.toLowerCase().includes(k));
             const isLocationContext = /areas?|towns?|cities?|locations?|cover/i.test(lineText);
@@ -100,12 +91,10 @@ const parseResponse = (originalText) => {
       }
     }
 
-    // 4. Check for Bullet Points
     const isBullet = bulletSymbolRegex.test(lineText);
     if (isBullet && !extractedFromLine) {
       let option = lineText.replace(bulletSymbolRegex, "").replace(/\*\*/g, "").trim();
       const isBlocked = blockedPhrases.some(phrase => option.toLowerCase().includes(phrase));
-      
       const isService = serviceKeywords.some(k => option.toLowerCase().includes(k));
       const isDay = /^(mon|tue|wed|thu|fri|sat|sun)/i.test(option);
       const isTime = /\d{1,2}(?::\d{2})?\s*[AaPp][Mm]/.test(option);
@@ -118,7 +107,6 @@ const parseResponse = (originalText) => {
       }
     }
 
-    // 5. Check for Single Times
     const timeMatches = lineText.match(singleTimeRegex);
     if (timeMatches) {
       timeMatches.forEach((time) => {
@@ -163,13 +151,7 @@ const Header = () => (
         <p className="cw-subtitle">Here to help with roofing, siding or gutters.</p>
       </div>
     </div>
-    <div 
-      style={{ 
-        marginTop: '16px', 
-        height: '1px', 
-        background: 'linear-gradient(90deg, transparent 0%, rgba(193, 19, 46, 0.15) 50%, transparent 100%)' 
-      }} 
-    ></div>
+    <div className="cw-header-separator"></div>
   </div>
 );
 
@@ -208,7 +190,7 @@ const FooterInput = forwardRef(({ message, setMessage, sendMessage, loading }, r
 // --- MAIN COMPONENT ---
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
-  const [message, setMessage] = useState(""); // Input message state
+  const [message, setMessage] = useState(""); 
   const [loading, setLoading] = useState(false);
   const [showGreeting, setShowGreeting] = useState(true);
   
@@ -219,31 +201,19 @@ export default function ChatWidget() {
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  // 1. Initialize chat history from LocalStorage (so chat stays after reload)
-  const [chatLog, setChatLog] = useState(() => {
-    try {
-      const saved = localStorage.getItem("chat_history");
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  });
+  // 1. Chat Log State (Always starts EMPTY on reload)
+  // Hum localStorage se load NAHI kar rahe.
+  const [chatLog, setChatLog] = useState([]);
 
-  // 2. Decide starting Tab: If history exists, show Chat, else Home
-  const [activeTab, setActiveTab] = useState(() => {
-    return localStorage.getItem("chat_history") ? "chat" : "home";
-  });
+  // 2. Active Tab State (Always starts at 'home' on reload)
+  const [activeTab, setActiveTab] = useState("home");
 
-  // 3. Auto-Save chat to LocalStorage (Max 100 messages)
+  // Note: LocalStorage mein CHAT save karne wala useEffect REMOVED hai.
+
+  // 3. Initialize IDs (Keep IDs Persistent so Server remembers user)
   useEffect(() => {
-    if (chatLog.length > 0) {
-      const trimmedLog = chatLog.slice(-100);
-      localStorage.setItem("chat_history", JSON.stringify(trimmedLog));
-    }
-  }, [chatLog]);
-
-  // 4. Initialize Session ID and Device ID (Create once, then save)
-  useEffect(() => {
+    // Session ID check karo. Agar pehle se hai to wahi use karo.
+    // Is se server ko pata chalega ye wahi user hai jo kal aya tha.
     let session = localStorage.getItem("chat_session_id");
     if (!session) {
       session = generateUUID();
@@ -251,6 +221,7 @@ export default function ChatWidget() {
     }
     setSessionId(session);
 
+    // Mac ID check karo
     let deviceId = localStorage.getItem("chat_device_mac_id");
     if (!deviceId) {
       deviceId = generateUUID();
@@ -259,59 +230,65 @@ export default function ChatWidget() {
     setMacId(deviceId);
   }, []);
 
-  // Auto-Focus on input when chat opens
+  // Auto-Focus Logic
   useEffect(() => {
     if (open && !loading) {
       setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
+        if (inputRef.current) inputRef.current.focus();
       }, 100);
     }
   }, [open, loading, activeTab]);
 
-  // Auto-scroll to bottom
+  // Auto-scroll Logic
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatLog, loading, activeTab]);
 
-  // Handle opening/closing the widget
+  // Toggle Widget Logic
   const toggleWidget = () => {
     if (open) {
       setShowGreeting(true);
     } else {
       setShowGreeting(false);
+      // Agar active chat hai to wahan, warna home screen
       setActiveTab(chatLog.length > 0 ? "chat" : "home");
     }
     setOpen(!open);
   };
 
-  // Function to send message to API
+  // Send Message Logic
   const sendMessage = useCallback(async (msgOverride = null) => {
     const msgToSend = msgOverride || message;
     if (!msgToSend || !msgToSend.trim()) return;
 
     if (activeTab !== "chat") setActiveTab("chat");
 
-    // Optimistic UI Update (Show user message immediately)
+    // UI Update (Add user message)
     setChatLog((prev) => {
       const updatedHistory = prev.map((msg) => 
         msg.sender === "bot" ? { ...msg, interactionDone: true } : msg
       );
-      return [...updatedHistory, { sender: "user", text: msgToSend }];
+      
+      const newHistory = [...updatedHistory, { sender: "user", text: msgToSend }];
+      
+      // Keep only last 100 messages in current session memory
+      if (newHistory.length > 100) {
+        return newHistory.slice(-100); 
+      }
+      return newHistory;
     });
 
     if (!msgOverride) setMessage("");
     setLoading(true);
 
     try {
-      // Send request to webhook
+      // API Call: Sending Persistent Session ID
       const res = await fetch("https://automate.ththeater.com/webhook/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           message: msgToSend, 
-          sessionId: sessionId,
+          sessionId: sessionId, // <-- Yeh ID same rahegi, server is se context uthayega
           macId: macId
         }),
       });
@@ -322,13 +299,17 @@ export default function ChatWidget() {
       const responseData = Array.isArray(data) ? data[0] : data;
       const originalText = responseData.output || responseData.text || "Received";
       
-      // Parse response to find options/chips
       const { text, options } = parseResponse(originalText);
 
-      setChatLog((p) => [
-        ...p,
-        { sender: "bot", text, options, interactionDone: false },
-      ]);
+      // Add Bot Response
+      setChatLog((prev) => {
+        const newHistory = [...prev, { sender: "bot", text, options, interactionDone: false }];
+        if (newHistory.length > 100) {
+            return newHistory.slice(-100);
+        }
+        return newHistory;
+      });
+
     } catch (err) {
       setChatLog((p) => [
         ...p,
@@ -342,7 +323,7 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* Greeting Bubble (Only visible when widget is closed) */}
+      {/* Greeting Bubble */}
       {!open && showGreeting && (
         <div
           onClick={toggleWidget}
@@ -353,7 +334,7 @@ export default function ChatWidget() {
         </div>
       )}
 
-      {/* Main Toggle Button */}
+      {/* Main Button */}
       <button onClick={toggleWidget} className={`cw-trigger-btn ${open ? 'open' : ''}`}>
         {open ? (
           <svg width="24" height="24" stroke="white" fill="none" strokeWidth="2" viewBox="0 0 24 24">
@@ -369,7 +350,7 @@ export default function ChatWidget() {
         )}
       </button>
 
-      {/* Main Chat Window */}
+      {/* Chat Window */}
       {open && (
         <div className="cw-wrapper">
           <div className="cw-container">
@@ -380,7 +361,6 @@ export default function ChatWidget() {
               <Header />
 
               <div className="cw-body">
-                {/* Home Tab: Chips Only */}
                 {activeTab === "home" && (
                   <>
                     <StaticBotGreeting />
@@ -399,7 +379,6 @@ export default function ChatWidget() {
                   </>
                 )}
 
-                {/* Chat Tab: Conversation History */}
                 {activeTab === "chat" && (
                   <>
                     <StaticBotGreeting />
@@ -421,7 +400,6 @@ export default function ChatWidget() {
                           </div>
                         )}
 
-                        {/* Chips/Options from Bot */}
                         {chat.sender === "bot" && chat.options?.length > 0 && !chat.interactionDone && (
                           <div className="cw-chips-container" style={{ marginBottom: '10px', marginLeft: '2px' }}>
                             {chat.options.map((opt, idx) => (

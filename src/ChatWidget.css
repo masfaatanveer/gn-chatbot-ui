@@ -169,9 +169,9 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
-  box-shadow:
+  /* box-shadow:
     rgba(0, 0, 0, 0.45) 0px 18px 44px,
-    0 0 0 1px rgba(255, 255, 255, 0.05);
+    0 0 0 1px rgba(255, 255, 255, 0.05); */
 
   overflow: hidden;
   opacity: 1;
@@ -362,7 +362,7 @@
   z-index: 10;
 }
 
-/* USER MESSAGE       MM */
+/* USER MESSAGE  MM */
 .cw-user-message-row {
   display: flex;
   align-items: flex-end;
@@ -611,16 +611,11 @@
   border-radius: 10px;
 }
 
-/* ==========================================================
-   PERFECT RESPONSIVE SYSTEM — ALL DEVICES SUPPORTED
-   ========================================================== */
 
-/* Always keep rounded — applies to ALL devices */
 .cw-container {
   border-radius: 32px !important;
 }
 
-/* Extra Large Screens (1440px+) */
 @media (min-width: 1440px) {
   .cw-container {
     width: 480px;
@@ -628,7 +623,6 @@
   }
 }
 
-/*  Desktop / Laptop (1280px to 1440px) */
 @media (max-width: 1280px) {
   .cw-container {
     width: 440px;
@@ -636,7 +630,6 @@
   }
 }
 
-/*  Medium Laptop / Small Desktop */
 @media (max-width: 1080px) {
   .cw-container {
     width: 420px;
@@ -644,7 +637,6 @@
   }
 }
 
-/*  Tablets (1024px – 768px) */
 @media (max-width: 1024px) {
   .cw-container {
     width: 400px;
@@ -657,7 +649,6 @@
   }
 }
 
-/* Large Phones / Small Tablets (768px – 600px) */
 @media (max-width: 768px) {
   .cw-container {
     width: 380px;
@@ -685,7 +676,6 @@
   }
 }
 
-/*  Phones up to 600px */
 @media (max-width: 600px) {
 
   .cw-container {
@@ -715,7 +705,6 @@
   }
 }
 
-/* Extra small phones (≤ 420px) */
 @media (max-width: 420px) {
 
   .cw-container {
@@ -735,7 +724,6 @@
   }
 }
 
-/*  Small Phones (480px – 400px) */
 @media (max-width: 480px) {
   .cw-container {
     width: 100%;
@@ -772,7 +760,6 @@
   }
 }
 
-/* Very Small Phones (400px – 360px) */
 @media (max-width: 400px) {
   .cw-container {
     padding: 14px;
@@ -788,7 +775,6 @@
   }
 }
 
-/*  ULTRA Small Screens (≤ 330px width) */
 @media (max-width: 330px) {
   .cw-container {
     padding: 12px;
