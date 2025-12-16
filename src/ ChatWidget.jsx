@@ -158,8 +158,7 @@ const Header = () => (
 const StaticBotGreeting = () => (
   <div className="cw-bot-bubble">
     Hi there! 👋<br />
-    I'm the GN Roofing Assistant.<br />
-    Need help with roofing, siding, gutters or scheduling a free inspection?
+    I’m Willy, the GN Exteriors Assistant. Need help with roofing, siding, gutters, or another exterior project?
   </div>
 );
 
@@ -201,19 +200,12 @@ export default function ChatWidget() {
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  // 1. Chat Log State (Always starts EMPTY on reload)
-  // Hum localStorage se load NAHI kar rahe.
   const [chatLog, setChatLog] = useState([]);
 
-  // 2. Active Tab State (Always starts at 'home' on reload)
   const [activeTab, setActiveTab] = useState("home");
 
-  // Note: LocalStorage mein CHAT save karne wala useEffect REMOVED hai.
 
-  // 3. Initialize IDs (Keep IDs Persistent so Server remembers user)
   useEffect(() => {
-    // Session ID check karo. Agar pehle se hai to wahi use karo.
-    // Is se server ko pata chalega ye wahi user hai jo kal aya tha.
     let session = localStorage.getItem("chat_session_id");
     if (!session) {
       session = generateUUID();
@@ -365,7 +357,7 @@ export default function ChatWidget() {
                   <>
                     <StaticBotGreeting />
                     <div className="cw-chips-container">
-                      {["Roofing Estimate", "Siding Repair", "Gutter Issues", "Free Inspection"].map((label, i) => (
+                      {[" Free Estimate", "Free Inspection", "I have a question", "Other"].map((label, i) => (
                         <button
                           key={label}
                           onClick={() => sendMessage(label)}
