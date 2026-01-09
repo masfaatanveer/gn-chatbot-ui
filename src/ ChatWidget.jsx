@@ -18,119 +18,140 @@ const parseResponse = (originalText) => {
   let detectedOptions = [];
   let linesToKeep = [];
 
-  const sentenceListRegex = /(?:offer|provide|include|services?|serve|areas?|towns?|cities?|locations?|cover|in|available|days?|times?|slots?)(?:\s+|:\s*|\s+are\s*:?\s*|\s+on\s*)([\w\s,]+(?:and\s+[\w\s]+)?)/i;
-  const bulletSymbolRegex = /^[\-\*\•\d][\.\)]?\s+/; 
+  // Regex patterns
+  const bulletSymbolRegex = /^[\-\*\•\d][\.\)]?\s+/;
   const timeRangeRegex = /\b((?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*[AaPp][Mm]\s*-\s*(?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*[AaPp][Mm])\b/g;
-  const dateRegex = /\b((?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*)\b(?:.{0,20}?\d{1,2}(?:st|nd|rd|th)?)?/i;
   const singleTimeRegex = /\b((?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*[AaPp][Mm])\b/g;
-
-  const serviceKeywords = ["roof", "siding", "gutter", "repair", "install", "inspect", "estimate", "leak", "shingle", "replacement"];
-
+  
+  // NEW: Simple "Day Time" format detector (e.g., "Monday 10:00 AM")
+  const dayTimeRegex = /\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+((?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*[AaPp][Mm])\b/gi;
+  
+  // Service keywords
+  const serviceKeywords = ["roof", "roofing", "siding", "gutter", "gutters", "deck", "decks", "repair", "install", "inspect", "estimation"];
+  
+  // Blocked phrases (information requests, not options)
   const blockedPhrases = [
-    "your best phone number", "your full name", "provide the following",
-    "is your", "what is", "please provide", "tell me",
-    "your area", "your location", "your address", "your zip code", "following"
+    "your name", "phone number", "email", "your full name",
+    "provide the following", "is your", "what is", "please provide",
+    "tell me", "your area", "your location", "your address", 
+    "your zip code", "following", "I need", "I'll need",
+    "description of the project", "brief description"
   ];
 
+  // Special trigger phrases that indicate options are coming
+  const optionTriggers = [
+    "we provide:", "services:", "available times:", "available slots:",
+    "we offer:", "options:", "choose from:"
+  ];
+
+  let isOptionsContext = false;
   let currentContextDate = null;
 
   lines.forEach((line) => {
     let lineText = line.trim();
     let extractedFromLine = false;
 
+    // Check if this line triggers "options mode"
+    const lowerLine = lineText.toLowerCase();
+    if (optionTriggers.some(trigger => lowerLine.includes(trigger))) {
+      isOptionsContext = true;
+      linesToKeep.push(lineText); // Keep the header
+      return;
+    }
+
+    // PRIORITY 1: Detect "Day Time" format (e.g., "Monday 10:00 AM")
+    const dayTimeMatches = lineText.match(dayTimeRegex);
+    if (dayTimeMatches) {
+      dayTimeMatches.forEach((match) => {
+        const cleanMatch = match.trim();
+        if (!detectedOptions.includes(cleanMatch)) {
+          detectedOptions.push(cleanMatch);
+        }
+      });
+      extractedFromLine = true;
+      return; // Don't process this line further
+    }
+
+    // PRIORITY 2: Detect time ranges (e.g., "9:00 AM - 5:00 PM")
     const rangeMatches = lineText.match(timeRangeRegex);
     if (rangeMatches) {
       rangeMatches.forEach(range => {
-         if (!detectedOptions.includes(range)) detectedOptions.push(range);
+        if (!detectedOptions.includes(range)) {
+          detectedOptions.push(range);
+        }
       });
       lineText = lineText.replace(timeRangeRegex, "").trim();
-      if (lineText.length < 10) extractedFromLine = true; 
+      if (lineText.length < 10) extractedFromLine = true;
     }
 
-    const dateMatch = lineText.match(dateRegex);
-    if (dateMatch) {
-        let foundDate = dateMatch[0].trim().replace(/[:,-]+$/, "");
-        currentContextDate = foundDate; 
-        
-        if (lineText.length < 25 && !extractedFromLine) {
-           if (!detectedOptions.includes(foundDate)) {
-               detectedOptions.push(foundDate);
-               extractedFromLine = true;
-           }
-        }
-    }
-
-    const sentenceMatch = lineText.match(sentenceListRegex);
-    if (sentenceMatch) {
-      const rawList = sentenceMatch[1].trim(); 
-      const isSentence = /^(is|are|was|were|do|does|can|will|should|what|where)\b/i.test(rawList);
-      const hasSeparator = rawList.includes(',') || rawList.includes(' and ') || rawList.includes(' or ');
-
-      if (!isSentence && hasSeparator) {
-          const items = rawList.split(/,| and | or /).map(s => s.trim());
-          let itemsAdded = 0;
-
-          items.forEach(item => {
-            let cleanItem = item.replace(/[.?!]+$/, ""); 
-            const isBlocked = blockedPhrases.some(phrase => cleanItem.toLowerCase().includes(phrase));
-            const isDay = /^(mon|tue|wed|thu|fri|sat|sun)/i.test(cleanItem);
-            const isService = serviceKeywords.some(k => cleanItem.toLowerCase().includes(k));
-            const isLocationContext = /areas?|towns?|cities?|locations?|cover/i.test(lineText);
-
-            if (!isBlocked && cleanItem.length > 2 && cleanItem.length < 35) {
-               if (isDay || isService || isLocationContext) {
-                  cleanItem = cleanItem.charAt(0).toUpperCase() + cleanItem.slice(1);
-                  if (!detectedOptions.includes(cleanItem)) {
-                      detectedOptions.push(cleanItem);
-                      itemsAdded++;
-                  }  
-               }
-            }
-          });
-          if (itemsAdded > 0) lineText = lineText.replace(rawList, "the following:");
-      }
-    }
-
-    const isBullet = bulletSymbolRegex.test(lineText);
-    if (isBullet && !extractedFromLine) {
-      let option = lineText.replace(bulletSymbolRegex, "").replace(/\*\*/g, "").trim();
-      const isBlocked = blockedPhrases.some(phrase => option.toLowerCase().includes(phrase));
+    // PRIORITY 3: Detect services when in "options context"
+    if (isOptionsContext && !extractedFromLine) {
+      const isBullet = bulletSymbolRegex.test(lineText);
+      let option = isBullet ? lineText.replace(bulletSymbolRegex, "").trim() : lineText;
+      
+      // Check if this is a service option
       const isService = serviceKeywords.some(k => option.toLowerCase().includes(k));
-      const isDay = /^(mon|tue|wed|thu|fri|sat|sun)/i.test(option);
-      const isTime = /\d{1,2}(?::\d{2})?\s*[AaPp][Mm]/.test(option);
-
-      if (!isBlocked && option.length < 50) {
-          if (isService || isDay || isTime) {
-             detectedOptions.push(option);
-             extractedFromLine = true;
+      const isBlocked = blockedPhrases.some(phrase => option.toLowerCase().includes(phrase));
+      const hasComma = option.includes(',');
+      
+      if (isService && !isBlocked && option.length > 2 && option.length < 40) {
+        if (!detectedOptions.includes(option)) {
+          detectedOptions.push(option);
+          extractedFromLine = true;
+        }
+      }
+      
+      // Handle comma-separated list (e.g., "Roofing, Siding, Gutters")
+      if (hasComma && !isBlocked) {
+        const items = option.split(',').map(s => s.trim());
+        items.forEach(item => {
+          const isItemService = serviceKeywords.some(k => item.toLowerCase().includes(k));
+          if (isItemService && item.length > 2 && item.length < 30) {
+            const cleanItem = item.charAt(0).toUpperCase() + item.slice(1);
+            if (!detectedOptions.includes(cleanItem)) {
+              detectedOptions.push(cleanItem);
+            }
           }
+        });
+        extractedFromLine = true;
       }
     }
 
+    // PRIORITY 4: Detect single times (with context)
     const timeMatches = lineText.match(singleTimeRegex);
-    if (timeMatches) {
+    if (timeMatches && !extractedFromLine) {
       timeMatches.forEach((time) => {
         let label = time;
         if (currentContextDate && !label.toLowerCase().includes(currentContextDate.toLowerCase())) {
-          label = `${currentContextDate} - ${time}`;
+          label = `${currentContextDate} ${time}`;
         }
         const isPartOfRange = detectedOptions.some(opt => opt.includes(time));
         if (!isPartOfRange && !detectedOptions.includes(label)) {
-           detectedOptions.push(label);
+          detectedOptions.push(label);
         }
       });
       lineText = lineText.replace(singleTimeRegex, "").trim();
     }
 
+    // Keep lines that aren't extracted as options
     const isJunk = lineText === "" || /^[\*\-\•\s]+$/.test(lineText);
+    const isBlocked = blockedPhrases.some(phrase => lineText.toLowerCase().includes(phrase));
     
-    if (!isJunk && !extractedFromLine && lineText.length > 1) {
+    if (!isJunk && !extractedFromLine && !isBlocked && lineText.length > 1) {
       linesToKeep.push(lineText);
     }
   });
 
   let finalText = linesToKeep.join("\n").trim();
   if (!finalText && detectedOptions.length === 0) finalText = cleanText;
+  
+  // Final cleanup: Remove duplicate options
+  detectedOptions = [...new Set(detectedOptions)];
+  
+  // Limit to 5 options max
+  if (detectedOptions.length > 5) {
+    detectedOptions = detectedOptions.slice(0, 5);
+  }
   
   return { text: finalText, options: detectedOptions };
 };
