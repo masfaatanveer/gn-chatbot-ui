@@ -23,22 +23,40 @@ const parseResponse = (originalText) => {
   const timeRangeRegex = /\b((?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*[AaPp][Mm]\s*-\s*(?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*[AaPp][Mm])\b/g;
   const singleTimeRegex = /\b((?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*[AaPp][Mm])\b/g;
   
-  // NEW: Simple "Day Time" format detector (e.g., "Monday 10:00 AM")
-  const dayTimeRegex = /\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+((?:1[0-2]|0?[1-9])(?::[0-5][0-9])?\s*[AaPp][Mm])\b/gi;
+  // Strict "Day Time" format detector (e.g., "Monday 10:00 AM")
+  const dayTimeRegex = /\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+((?:1[0-2]|0?[1-9]):[0-5][0-9]\s*[AaPp][Mm])\b/gi;
+
+  // Block confusing date patterns
+  const confusingPatterns = {
+    dayWithNumber: /\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+\d{1,2}\s*$/i,
+    dayWithDash: /\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+\d+\s*-\s*/i,
+    brokenGrammar: /the following:\./i
+  };
   
   // Service keywords
   const serviceKeywords = ["roof", "roofing", "siding", "gutter", "gutters", "deck", "decks", "repair", "install", "inspect", "estimation"];
   
-  // Blocked phrases (information requests, not options)
+  // Blocked phrases
   const blockedPhrases = [
     "your name", "phone number", "email", "your full name",
     "provide the following", "is your", "what is", "please provide",
     "tell me", "your area", "your location", "your address", 
     "your zip code", "following", "I need", "I'll need",
-    "description of the project", "brief description"
+    "description of the project", "brief description",
+    "the following:.", "we service the following", "we provide: the following",
+    "massachusetts", "surrounding areas", "all of massachusetts",
+    "surrounding", "service the following"
   ];
 
-  // Special trigger phrases that indicate options are coming
+  // Area blocking
+  const areaBlockList = ["massachusetts", "surrounding", "areas", "all of", "service area"];
+  
+  const isAreaRelated = (text) => {
+    const lowerText = text.toLowerCase();
+    return areaBlockList.some(word => lowerText.includes(word));
+  };
+
+  // Option triggers
   const optionTriggers = [
     "we provide:", "services:", "available times:", "available slots:",
     "we offer:", "options:", "choose from:"
@@ -51,15 +69,14 @@ const parseResponse = (originalText) => {
     let lineText = line.trim();
     let extractedFromLine = false;
 
-    // Check if this line triggers "options mode"
     const lowerLine = lineText.toLowerCase();
     if (optionTriggers.some(trigger => lowerLine.includes(trigger))) {
       isOptionsContext = true;
-      linesToKeep.push(lineText); // Keep the header
+      linesToKeep.push(lineText);
       return;
     }
 
-    // PRIORITY 1: Detect "Day Time" format (e.g., "Monday 10:00 AM")
+    // PRIORITY 1: Detect "Day Time" format
     const dayTimeMatches = lineText.match(dayTimeRegex);
     if (dayTimeMatches) {
       dayTimeMatches.forEach((match) => {
@@ -69,10 +86,10 @@ const parseResponse = (originalText) => {
         }
       });
       extractedFromLine = true;
-      return; // Don't process this line further
+      return;
     }
 
-    // PRIORITY 2: Detect time ranges (e.g., "9:00 AM - 5:00 PM")
+    // PRIORITY 2: Detect time ranges
     const rangeMatches = lineText.match(timeRangeRegex);
     if (rangeMatches) {
       rangeMatches.forEach(range => {
@@ -89,24 +106,22 @@ const parseResponse = (originalText) => {
       const isBullet = bulletSymbolRegex.test(lineText);
       let option = isBullet ? lineText.replace(bulletSymbolRegex, "").trim() : lineText;
       
-      // Check if this is a service option
       const isService = serviceKeywords.some(k => option.toLowerCase().includes(k));
       const isBlocked = blockedPhrases.some(phrase => option.toLowerCase().includes(phrase));
       const hasComma = option.includes(',');
       
-      if (isService && !isBlocked && option.length > 2 && option.length < 40) {
+      if (isService && !isBlocked && !isAreaRelated(option) && option.length > 2 && option.length < 40) {
         if (!detectedOptions.includes(option)) {
           detectedOptions.push(option);
           extractedFromLine = true;
         }
       }
       
-      // Handle comma-separated list (e.g., "Roofing, Siding, Gutters")
       if (hasComma && !isBlocked) {
         const items = option.split(',').map(s => s.trim());
         items.forEach(item => {
           const isItemService = serviceKeywords.some(k => item.toLowerCase().includes(k));
-          if (isItemService && item.length > 2 && item.length < 30) {
+          if (isItemService && !isAreaRelated(item) && item.length > 2 && item.length < 30) {
             const cleanItem = item.charAt(0).toUpperCase() + item.slice(1);
             if (!detectedOptions.includes(cleanItem)) {
               detectedOptions.push(cleanItem);
@@ -117,7 +132,7 @@ const parseResponse = (originalText) => {
       }
     }
 
-    // PRIORITY 4: Detect single times (with context)
+    // PRIORITY 4: Detect single times
     const timeMatches = lineText.match(singleTimeRegex);
     if (timeMatches && !extractedFromLine) {
       timeMatches.forEach((time) => {
@@ -133,7 +148,6 @@ const parseResponse = (originalText) => {
       lineText = lineText.replace(singleTimeRegex, "").trim();
     }
 
-    // Keep lines that aren't extracted as options
     const isJunk = lineText === "" || /^[\*\-\•\s]+$/.test(lineText);
     const isBlocked = blockedPhrases.some(phrase => lineText.toLowerCase().includes(phrase));
     
@@ -145,13 +159,54 @@ const parseResponse = (originalText) => {
   let finalText = linesToKeep.join("\n").trim();
   if (!finalText && detectedOptions.length === 0) finalText = cleanText;
   
-  // Final cleanup: Remove duplicate options
+  // Final cleanup
+  detectedOptions = detectedOptions.filter(opt => {
+    const optLower = opt.toLowerCase();
+    
+    if (confusingPatterns.dayWithNumber.test(opt)) {
+      console.log('Blocked confusing pattern (day+number):', opt);
+      return false;
+    }
+    
+    if (confusingPatterns.dayWithDash.test(opt)) {
+      console.log('Blocked confusing pattern (has dash):', opt);
+      return false;
+    }
+    
+    if (isAreaRelated(opt)) {
+      console.log('Blocked area-related option:', opt);
+      return false;
+    }
+    
+    if (confusingPatterns.brokenGrammar.test(opt)) {
+      console.log('Blocked broken grammar:', opt);
+      return false;
+    }
+    
+    if (optLower.includes('the following')) {
+      console.log('Blocked "the following":', opt);
+      return false;
+    }
+    
+    const hasTime = /\d{1,2}:\d{2}\s*[AaPp][Mm]/.test(opt);
+    const isDayName = /^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)$/i.test(opt);
+    const isService = serviceKeywords.some(k => optLower.includes(k));
+    
+    if (!hasTime && !isService && !isDayName) {
+      console.log('Blocked: not valid format:', opt);
+      return false;
+    }
+    
+    return true;
+  });
+  
   detectedOptions = [...new Set(detectedOptions)];
   
-  // Limit to 5 options max
   if (detectedOptions.length > 5) {
     detectedOptions = detectedOptions.slice(0, 5);
   }
+  
+  console.log('Final detected options:', detectedOptions);
   
   return { text: finalText, options: detectedOptions };
 };
