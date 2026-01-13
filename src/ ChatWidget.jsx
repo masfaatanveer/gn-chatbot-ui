@@ -162,6 +162,20 @@ const parseResponse = (originalText) => {
   // Final cleanup
   detectedOptions = detectedOptions.filter(opt => {
     const optLower = opt.toLowerCase();
+    // 7. Block standalone times without day name
+    const hasDay = /^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)/i.test(opt);
+    const isJustTime = /^\d{1,2}:\d{2}\s*[AaPp][Mm]$/.test(opt);
+    
+    if (isJustTime && !hasDay) {
+      console.log('Blocked: time without day:', opt);
+      return false;
+    }
+    
+    // 8. Block ?? or invalid text
+    if (opt === '??' || opt === '?' || opt.length < 3) {
+      console.log('Blocked: invalid text:', opt);
+      return false;
+    }
     
     if (confusingPatterns.dayWithNumber.test(opt)) {
       console.log('Blocked confusing pattern (day+number):', opt);
