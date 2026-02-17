@@ -9,17 +9,6 @@
   --glass-bg: rgba(255, 255, 255, 0.08);
 }
 
-/* body {
-  background-image: url("https://gnexteriors.com/wp-content/uploads/2025/05/about.webp");
-  background-repeat: no-repeat;
-  background-size: 100%;
-  opacity: 2;
-
-} */
-
-
-
-
 /* --- Floating Trigger Button & Wrapper  --- */
 .cw-trigger-btn {
   position: fixed;
@@ -38,8 +27,7 @@
   z-index: 9999;
   transition: transform 0.3s, background 0.3s;
 
-
-   position: fixed !important;
+  position: fixed !important;
   bottom: 24px !important;
   right: 24px !important;
 
@@ -169,9 +157,6 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
-  /* box-shadow:
-    rgba(0, 0, 0, 0.45) 0px 18px 44px,
-    0 0 0 1px rgba(255, 255, 255, 0.05); */
 
   overflow: hidden;
   opacity: 1;
@@ -179,7 +164,6 @@
 
   margin: 0 !important;
   transform: none !important;
-
 }
 
 /* ENTRANCE ANIMATION */
@@ -228,14 +212,6 @@
   pointer-events: none;
 
   border-radius: 32px;
-
-  /* background: linear-gradient(
-    135deg,
-    rgb(44, 2, 8) 0%,
-    transparent 25%,
-    transparent 75%,
-    rgba(193, 19, 46, 0.05) 100%
-  ); */
 
   mix-blend-mode: overlay;
   z-index: 1;
@@ -363,7 +339,7 @@
   z-index: 10;
 }
 
-/* USER MESSAGE  MM */
+/* USER MESSAGE */
 .cw-user-message-row {
   display: flex;
   align-items: flex-end;
@@ -375,7 +351,6 @@
 
 .cw-user-bubble {
   background: rgba(80, 80, 80, 0.4);
-  /* Darker Glassy */
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: white;
   padding: 14px 20px;
@@ -578,7 +553,6 @@
 .cw-send-btn svg {
   transition: stroke 0.2s;
   stroke: #C1132E;
-  /* default stroke color */
 }
 
 .cw-send-btn:hover {
@@ -799,4 +773,49 @@
   .cw-bot-bubble {
     font-size: 12px;
   }
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   EMBED MODE — only active when loaded inside iframe
+   ═══════════════════════════════════════════════════════════ */
+
+.cw-embed-wrapper {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.cw-embed-container {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 0 !important;
+  animation: none !important;
+}
+
+/* Close button in header for embed mode */
+.cw-embed-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.cw-embed-close-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.1);
 }

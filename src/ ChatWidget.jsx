@@ -18,14 +18,12 @@ const parseResponse = (originalText) => {
   let detectedOptions = [];
   let linesToKeep = [];
 
-  // 1. Triggers - Sirf inke baad buttons banne chahiye
   const optionTriggers = [
     "available times:", "available slots:", "we provide:", "we offer:", "options:"
   ];
 
   let isOptionsContext = false;
 
-  // Regex Patterns
   const dayTimeRegex = /\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+((?:1[0-2]|0?[1-9]):[0-5][0-9]\s*[AaPp][Mm])\b/gi;
   const serviceKeywords = ["roof", "siding", "gutter", "deck", "repair", "install"];
 
@@ -35,7 +33,6 @@ const parseResponse = (originalText) => {
 
     const lowerLine = lineText.toLowerCase();
 
-    // Context Check: Kya ye line koi trigger hai?
     if (optionTriggers.some(trigger => lowerLine.includes(trigger))) {
       isOptionsContext = true;
       linesToKeep.push(lineText);
@@ -44,53 +41,71 @@ const parseResponse = (originalText) => {
 
     let extractedAsButton = false;
 
-    // RULE: Buttons sirf tab nikalo jab context "Options" ka ho
     if (isOptionsContext) {
-      // Check for "Monday 10:00 AM" format
       const dayTimeMatches = lineText.match(dayTimeRegex);
       if (dayTimeMatches) {
         dayTimeMatches.forEach(match => detectedOptions.push(match.trim()));
         extractedAsButton = true;
       } 
-      // Check for Services (Roofing, Siding etc)
       else if (serviceKeywords.some(k => lowerLine.includes(k)) && lineText.length < 30) {
-        // Bullet points saaf karein
         const cleanOption = lineText.replace(/^[\-\*\•\d][\.\)]?\s+/, "").trim();
         detectedOptions.push(cleanOption);
         extractedAsButton = true;
       }
     }
 
-    // Agar button nahi bana aur kaam ki baat hai, toh text mein rakho
     if (!extractedAsButton) {
-      // Aik aur check: Agar line mein "to" ya "between" hai aur woh trigger nahi hai, toh usey sentence hi rehne do
       linesToKeep.push(lineText);
     }
   });
 
   let finalText = linesToKeep.join("\n").trim();
-  
-  // Duplicate remove karein
   detectedOptions = [...new Set(detectedOptions)].slice(0, 5);
 
   return { text: finalText, options: detectedOptions };
 };
 
+// --- EMBED DETECTION ---
+const isEmbedded = () => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('embed') === 'true' || window.self !== window.top;
+  } catch (e) {
+    return true;
+  }
+};
+
+const notifyParent = (type) => {
+  try {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type }, "*");
+    }
+  } catch (e) {}
+};
+
 // --- SUB-COMPONENTS ---
 
-const Header = () => (
+const Header = ({ onClose, embedded }) => (
   <div className="cw-header-wrapper">
     <div className="cw-header-content">
       <div className="cw-logo-box">
         <img src={Logo} alt="GN Logo" className="cw-logo-img" />
       </div>
-      <div className="flex-1">
+      <div style={{ flex: 1 }}>
         <div className="cw-title-row">
           <span className="cw-title">GN Exteriors Assistant</span>
-           <span className="cw-status-dot"></span>
+          <span className="cw-status-dot"></span>
         </div>
         <p className="cw-subtitle">Here to help with roofing, siding or gutters.</p>
       </div>
+      {embedded && (
+        <button onClick={onClose} className="cw-embed-close-btn" aria-label="Close chat">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      )}
     </div>
     <div className="cw-header-separator"></div>
   </div>
@@ -99,7 +114,7 @@ const Header = () => (
 const StaticBotGreeting = () => (
   <div className="cw-bot-bubble">
     Hi there! 👋<br />
-    I’m Willy, the GN Exteriors Assistant. Need help with roofing, siding, gutters, or another exterior project?
+    I'm Willy, the GN Exteriors Assistant. Need help with roofing, siding, gutters, or another exterior project?
   </div>
 );
 
@@ -123,18 +138,21 @@ const FooterInput = forwardRef(({ message, setMessage, sendMessage, loading }, r
         </svg>
       </button>
     </div>
-  <a href="https://www.quikrai.us/" target="_blank">  <div className="cw-powered">Powered by Quikr AI</div>  </a>  
+    <a href="https://www.quikrai.us/" target="_blank" rel="noopener noreferrer">
+      <div className="cw-powered">Powered by Quikr AI</div>
+    </a>
   </div>
 ));
 
 // --- MAIN COMPONENT ---
 export default function ChatWidget() {
-  const [open, setOpen] = useState(false);
+  const embedded = isEmbedded();
+
+  const [open, setOpen] = useState(embedded); // Auto-open in embed mode
   const [message, setMessage] = useState(""); 
   const [loading, setLoading] = useState(false);
   const [showGreeting, setShowGreeting] = useState(true);
   
-  // States for IDs
   const [sessionId, setSessionId] = useState("");
   const [macId, setMacId] = useState("");
 
@@ -142,9 +160,7 @@ export default function ChatWidget() {
   const inputRef = useRef(null);
 
   const [chatLog, setChatLog] = useState([]);
-
   const [activeTab, setActiveTab] = useState("home");
-
 
   useEffect(() => {
     let session = localStorage.getItem("chat_session_id");
@@ -154,60 +170,81 @@ export default function ChatWidget() {
     }
     setSessionId(session);
 
-    // Mac ID check karo
     let deviceId = localStorage.getItem("chat_device_mac_id");
     if (!deviceId) {
       deviceId = generateUUID();
       localStorage.setItem("chat_device_mac_id", deviceId);
     }
     setMacId(deviceId);
+
+    // Embed mode: reset body styles
+    if (embedded) {
+      document.documentElement.style.cssText = "margin:0;padding:0;overflow:hidden;background:#0f0f0f;height:100%;";
+      document.body.style.cssText = "margin:0;padding:0;overflow:hidden;background:#0f0f0f;height:100%;";
+      notifyParent("GN_CHAT_READY");
+    }
   }, []);
 
-  // Auto-Focus Logic
+  // Listen for parent messages (embed mode)
+  useEffect(() => {
+    if (!embedded) return;
+    const handler = (event) => {
+      const data = event.data;
+      if (!data || !data.type) return;
+      if (data.type === "GN_CHAT_OPEN") {
+        setOpen(true);
+        setTimeout(() => inputRef.current?.focus(), 200);
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [embedded]);
+
+  // Auto-Focus
   useEffect(() => {
     if (open && !loading) {
-      setTimeout(() => {
-        if (inputRef.current) inputRef.current.focus();
-      }, 100);
+      setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [open, loading, activeTab]);
 
-  // Auto-scroll Logic
+  // Auto-scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatLog, loading, activeTab]);
 
-  // Toggle Widget Logic
+  // Toggle (standalone only)
   const toggleWidget = () => {
     if (open) {
       setShowGreeting(true);
     } else {
       setShowGreeting(false);
-      // Agar active chat hai to wahan, warna home screen
       setActiveTab(chatLog.length > 0 ? "chat" : "home");
     }
     setOpen(!open);
   };
 
-  // Send Message Logic
+  // Close handler
+  const handleClose = () => {
+    if (embedded) {
+      notifyParent("GN_CHAT_CLOSE");
+    } else {
+      toggleWidget();
+    }
+  };
+
+  // Send Message
   const sendMessage = useCallback(async (msgOverride = null) => {
     const msgToSend = msgOverride || message;
     if (!msgToSend || !msgToSend.trim()) return;
 
     if (activeTab !== "chat") setActiveTab("chat");
 
-    // UI Update (Add user message)
     setChatLog((prev) => {
       const updatedHistory = prev.map((msg) => 
         msg.sender === "bot" ? { ...msg, interactionDone: true } : msg
       );
-      
       const newHistory = [...updatedHistory, { sender: "user", text: msgToSend }];
-      
-      // Keep only last 100 messages in current session memory
-      if (newHistory.length > 100) {
-        return newHistory.slice(-100); 
-      }
+      if (newHistory.length > 100) return newHistory.slice(-100); 
       return newHistory;
     });
 
@@ -215,15 +252,10 @@ export default function ChatWidget() {
     setLoading(true);
 
     try {
-      // API Call: Sending Persistent Session ID
       const res = await fetch("https://automate.ththeater.com/webhook/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          message: msgToSend, 
-          sessionId: sessionId, // <-- Yeh ID same rahegi, server is se context uthayega
-          macId: macId
-        }),
+        body: JSON.stringify({ message: msgToSend, sessionId, macId }),
       });
 
       if (!res.ok) throw new Error("Server error");
@@ -231,15 +263,11 @@ export default function ChatWidget() {
       const data = await res.json();
       const responseData = Array.isArray(data) ? data[0] : data;
       const originalText = responseData.output || responseData.text || "Received";
-      
       const { text, options } = parseResponse(originalText);
 
-      // Add Bot Response
       setChatLog((prev) => {
         const newHistory = [...prev, { sender: "bot", text, options, interactionDone: false }];
-        if (newHistory.length > 100) {
-            return newHistory.slice(-100);
-        }
+        if (newHistory.length > 100) return newHistory.slice(-100);
         return newHistory;
       });
 
@@ -256,42 +284,41 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* Greeting Bubble */}
-      {!open && showGreeting && (
-        <div
-          onClick={toggleWidget}
-          className={`cw-greeting-bubble ${!open ? "cw-greeting-show" : "cw-greeting-hide"}`}
-        >
-          <span>Chat now with Willy</span>
-          <span style={{ fontSize: '20px' }}>👋</span>
-        </div>
+      {/* ─── STANDALONE MODE ONLY: Greeting + Trigger Button ─── */}
+      {!embedded && (
+        <>
+          {!open && showGreeting && (
+            <div
+              onClick={toggleWidget}
+              className={`cw-greeting-bubble ${!open ? "cw-greeting-show" : "cw-greeting-hide"}`}
+            >
+              <span>Chat now with Willy</span>
+              <span style={{ fontSize: '20px' }}>👋</span>
+            </div>
+          )}
+
+          <button onClick={toggleWidget} className={`cw-trigger-btn ${open ? 'open' : ''}`}>
+            {open ? (
+              <svg width="24" height="24" stroke="white" fill="none" strokeWidth="2" viewBox="0 0 24 24">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            ) : (
+              <img src={Logo} alt="Company Logo" className="cw-logo-img" />
+            )}
+          </button>
+        </>
       )}
 
-      {/* Main Button */}
-      <button onClick={toggleWidget} className={`cw-trigger-btn ${open ? 'open' : ''}`}>
-        {open ? (
-          <svg width="24" height="24" stroke="white" fill="none" strokeWidth="2" viewBox="0 0 24 24">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        ) : (
-          <img
-            src={Logo}
-            alt="Company Logo"
-            className="cw-logo-img"
-          />
-        )}
-      </button>
-
-      {/* Chat Window */}
+      {/* ─── CHAT WINDOW ─── */}
       {open && (
-        <div className="cw-wrapper">
-          <div className="cw-container">
+        <div className={`cw-wrapper ${embedded ? 'cw-embed-wrapper' : ''}`}>
+          <div className={`cw-container ${embedded ? 'cw-embed-container' : ''}`}>
             <div className="cw-left-line"></div>
             <div className="cw-overlay"></div>
 
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <Header />
+              <Header onClose={handleClose} embedded={embedded} />
 
               <div className="cw-body">
                 {activeTab === "home" && (
