@@ -113,7 +113,7 @@
       "  transform:translateY(20px);",
       "  transition:opacity 0.3s ease,transform 0.3s ease;",
       "  pointer-events:none;",
-      "  background:#0f0f0f;",
+      "  background:transparent;",
       "  box-shadow:rgba(0,0,0,0.45) 0px 18px 44px,0 0 0 1px rgba(255,255,255,0.05);",
       "  visibility:hidden;",  
       "}",

@@ -797,14 +797,14 @@
   height: 100% !important;
   border-radius: 0 !important;
   animation: none !important;
-  padding: 20px 18px !important; 
   background: linear-gradient(
     165deg,
-    rgba(120, 8, 20, 0.95) 0%,
-    rgb(46, 16, 20) 8%,
-    rgb(8, 8, 8) 30%,
-    rgb(12, 12, 12) 60%,
-    rgb(30, 12, 15) 100%
+    #590101 0%,
+    #2e1014 8%,
+    #030303 30%,
+    #080808 50%,
+    #0a0808 66%,
+    #1b0b0b 100%
   ) !important;
 }
 
