@@ -797,6 +797,7 @@
   height: 100% !important;
   border-radius: 0 !important;
   animation: none !important;
+  padding: 20px 18px !important; 
 }
 
 /* Close button in header for embed mode */
@@ -818,4 +819,10 @@
 .cw-embed-close-btn:hover {
   background: rgba(255, 255, 255, 0.15);
   transform: scale(1.1);
+}
+
+.cw-header-separator {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin-top: 16px;
 }

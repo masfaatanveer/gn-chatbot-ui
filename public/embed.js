@@ -115,10 +115,12 @@
       "  pointer-events:none;",
       "  background:#0f0f0f;",
       "  box-shadow:rgba(0,0,0,0.45) 0px 18px 44px,0 0 0 1px rgba(255,255,255,0.05);",
+      "  visibility:hidden;",  
       "}",
 
       "#gn-frame.gn-open{",
       "  opacity:1;transform:translateY(0);pointer-events:auto;",
+      "  visibility:visible;",  
       "}",
 
       /* ── MOBILE ── */
@@ -219,7 +221,6 @@
   }
 
   function openChat() {
-    if (!iframe) createIframe();
     isOpen = true;
 
     // Button → open state (shows X, rotates)
@@ -267,12 +268,13 @@
   });
 
   // ─── INIT ───
-  function init() {
-    if (document.getElementById("gn-trigger")) return;
-    injectStyles();
-    createTrigger();
-    createGreeting();
-  }
+function init() {
+  if (document.getElementById("gn-trigger")) return;
+  injectStyles();
+  createTrigger();
+  createGreeting();
+  createIframe(); 
+}
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
