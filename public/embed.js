@@ -206,6 +206,7 @@
     iframe = document.createElement("iframe");
     iframe.id = "gn-frame";
     iframe.src = WIDGET_URL + "?embed=true";
+    iframe.setAttribute("allowtransparency", "true");
     iframe.setAttribute("allow", "microphone; clipboard-write");
     iframe.setAttribute("title", "GN Exteriors Chat Assistant");
     document.body.appendChild(iframe);
