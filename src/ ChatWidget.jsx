@@ -98,6 +98,14 @@ const Header = ({ onClose, embedded }) => (
         </div>
         <p className="cw-subtitle">Here to help with roofing, siding or gutters.</p>
       </div>
+      {embedded && (
+        <button onClick={onClose} className="cw-embed-close-btn" aria-label="Close chat">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      )}
     </div>
     <div className="cw-header-separator"></div>
   </div>

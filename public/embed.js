@@ -113,8 +113,10 @@
       "  transform:translateY(20px);",
       "  transition:opacity 0.3s ease,transform 0.3s ease;",
       "  pointer-events:none;",
-      "  background:transparent;",
+      "  background:linear-gradient(165deg,#590101 0%,#2e1014 8%,#030303 30%,#080808 50%,#0a0808 66%,#1b0b0b 100%);",
       "  box-shadow:rgba(0,0,0,0.45) 0px 18px 44px,0 0 0 1px rgba(255,255,255,0.05);",
+      "  background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 50 50'%3E%3Cstyle%3Ecircle%7Banimation:r 1s linear infinite;transform-origin:center%7D%40keyframes r%7B100%25%7Btransform:rotate(360deg)%7D%7D%3C/style%3E%3Ccircle cx='25' cy='25' r='20' fill='none' stroke='rgba(193,19,46,0.4)' stroke-width='3' stroke-dasharray='80 40' stroke-linecap='round'/%3E%3C/svg%3E\");",
+      "  background-repeat:no-repeat;background-position:center;background-size:40px 40px;",
       "  visibility:hidden;",  
       "}",
 
