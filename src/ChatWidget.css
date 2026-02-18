@@ -798,6 +798,26 @@
   border-radius: 0 !important;
   animation: none !important;
   padding: 20px 18px !important; 
+  background: linear-gradient(
+    165deg,
+    rgba(120, 8, 20, 0.95) 0%,
+    rgb(46, 16, 20) 8%,
+    rgb(8, 8, 8) 30%,
+    rgb(12, 12, 12) 60%,
+    rgb(30, 12, 15) 100%
+  ) !important;
+}
+
+.cw-embed-wrapper .cw-body,
+.cw-embed-wrapper .cw-bot-bubble,
+.cw-embed-wrapper .cw-user-bubble {
+  font-size: 15px !important;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.cw-embed-wrapper .cw-chip-btn {
+  font-size: 13px !important;
 }
 
 /* Close button in header for embed mode */
