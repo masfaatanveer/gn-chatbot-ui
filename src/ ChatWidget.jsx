@@ -252,7 +252,7 @@ export default function ChatWidget() {
     setLoading(true);
 
     try {
-      const res = await fetch("https://automate.ththeater.com/webhook/chat", {
+      const res = await fetch("https://n8n.quikraistaging.com/webhook/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: msgToSend, sessionId, macId }),
